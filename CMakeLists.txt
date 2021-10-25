@@ -71,3 +71,12 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
   ${CERES_INCLUDE_DIRS}
 )
+
+#### Preprocessor Node
+add_executable(preprocessor
+    src/pc_processor.cc
+    src/nodes/preprocessor.cc)
+target_link_libraries(preprocessor
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+)
