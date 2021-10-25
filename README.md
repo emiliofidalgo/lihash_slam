@@ -1,2 +1,2 @@
-# LiHash_SLAM
+# lihash_slam
 LiDAR- and Hashing-based SLAM
