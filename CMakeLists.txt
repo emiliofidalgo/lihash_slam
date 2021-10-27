@@ -80,3 +80,13 @@ target_link_libraries(preprocessor
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
 )
+
+#### Odometer Node
+add_executable(odometer
+    src/lidar_odometry.cc
+    src/nodes/odometer.cc)
+target_link_libraries(odometer
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${CERES_LIBRARIES}
+)
