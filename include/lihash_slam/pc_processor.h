@@ -70,6 +70,8 @@ class PointCloudProcessor {
     // Variables
     bool picked_[400000];
     int ncores_;
+
+    // Params
     double min_range_;
     double max_range_;
     int lidar_type_;
