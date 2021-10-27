@@ -29,6 +29,7 @@
 #include <lihash_slam/pc_processor.h>
 
 lihash_slam::PointCloudProcessor* pcproc;
+
 ros::Publisher pc_edges_pub;
 ros::Subscriber pc_subs;
 
@@ -63,7 +64,7 @@ int main(int argc, char** argv) {
 
   // ROS Interface
   pc_edges_pub  = nh.advertise<sensor_msgs::PointCloud2>("edges", 10);
-  pc_subs   = nh.subscribe("points", 1000, lidarClb);
+  pc_subs       = nh.subscribe("points", 1000, lidarClb);
 
   // Receiving messages
   ros::spin();
