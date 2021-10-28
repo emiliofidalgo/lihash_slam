@@ -43,6 +43,7 @@ find_package(catkin REQUIRED COMPONENTS
   eigen_conversions
   pcl_conversions
   tf_conversions
+  message_filters
 )
 
 # Other packages
@@ -60,7 +61,7 @@ message(STATUS "Compiler flags: ${CMAKE_CXX_FLAGS}")
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs tf eigen_conversions pcl_conversions tf_conversions
+  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters
   DEPENDS EIGEN3 PCL CERES
 )
 
@@ -89,4 +90,14 @@ target_link_libraries(odometer
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
     ${CERES_LIBRARIES}
+)
+
+#### Loop Detector Node
+add_executable(loop_detector
+    include/lihash_slam/loop_detector_base.hpp
+    src/loop_detector_pose.cc
+    src/nodes/loop_detector.cc)
+target_link_libraries(loop_detector
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}    
 )

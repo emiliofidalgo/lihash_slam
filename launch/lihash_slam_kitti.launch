@@ -55,6 +55,16 @@
       <remap from="~points" to="preprocessor/edges" />
     </node>
 
+    <!-- Loop Detector -->
+    <node pkg="lihash_slam"
+          type="loop_detector"
+          name="loop_detector"
+          output="screen">
+      
+      <remap from="~pose"   to="odometer/keyframes/pose" />
+      <remap from="~points" to="odometer/keyframes/points" />
+    </node>
+
   </group>
 
   <node pkg="tf"
