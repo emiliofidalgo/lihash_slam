@@ -2,12 +2,16 @@
 <launch>
   
   <arg name="viz" default="false" />
+
+  <!-- Preprocessor -->
   <arg name="min_range" default="3.0" />
   <arg name="max_range" default="75.0" />
   <arg name="lidar_type" default="0" />
   <arg name="scan_lines" default="64" />
   <arg name="scan_regions" default="8" />
   <arg name="edges_per_region" default="10" />
+
+  <!-- Odometer -->
   <arg name="fixed_frame" default="odom" />
   <arg name="base_frame" default="base_link" />
   <arg name="lidar_frame" default="laser" />
@@ -16,6 +20,12 @@
   <arg name="kf_rot" default="2.0" />
   <arg name="kf_frames" default="10" />
   <arg name="lmap_frames" default="15" />
+  
+  <!-- Loop Detector -->
+  <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC -->
+  <arg name="dist_th" default="25.0" />
+  <arg name="accum_dist_th" default="25.0" />
+  <arg name="score_th" default="2.5" />
 
   <param name="use_sim_time" value="true"/>
 
@@ -62,6 +72,11 @@
           type="loop_detector"
           name="loop_detector"
           output="screen">
+      
+      <param name="lcd_method" value="$(arg lcd_method)" />
+      <param name="dist_th" value="$(arg dist_th)" />
+      <param name="accum_dist_th" value="$(arg accum_dist_th)" />
+      <param name="score_th" value="$(arg score_th)" />
       
       <remap from="~pose"   to="odometer/keyframes/pose" />
       <remap from="~points" to="odometer/keyframes/points" />

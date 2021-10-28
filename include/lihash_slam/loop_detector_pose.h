@@ -22,6 +22,9 @@
 
 #include <lihash_slam/loop_detector_base.hpp>
 
+// PCL
+#include <pcl/registration/ndt.h>
+
 namespace lihash_slam {
 
 // LC detector based on distance. Similar to HDL Graph SLAM
@@ -32,10 +35,16 @@ class LoopDetectorPose : public LoopDetector {
 
   void readParams(const ros::NodeHandle& nh);
   void init();
-  void addFrame(const Eigen::Isometry3d& pose, const PointCloud::Ptr& points);
-  void detect(const Eigen::Isometry3d& pose, const PointCloud::Ptr& points, std::vector<Loop>& loops);
+  void addFrame(const int id, const Eigen::Isometry3d& pose, const PointCloud::Ptr& points);
+  bool detect(Loop& loop);
  private:
   std::vector<LoopFrame> frames;
+  std::vector<double> acc_dists;
+
+  // Params
+  double dist_th_;
+  double accum_dist_th_;
+  double score_th_;
 };
 
 } // namespace lihash_slam

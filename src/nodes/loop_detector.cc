@@ -32,8 +32,11 @@
 // LiHash SLAM
 #include <lihash_slam/defs.h>
 #include <lihash_slam/loop_detector_pose.h>
+#include <lihash_slam/LoopClosure.h>
 
 lihash_slam::LoopDetector* ldet;
+
+ros::Publisher lc_pub_;
 
 void syncClb(const geometry_msgs::PoseStampedConstPtr& pose_msg, const sensor_msgs::PointCloud2ConstPtr& lidar_msg) {
   
@@ -54,7 +57,25 @@ void syncClb(const geometry_msgs::PoseStampedConstPtr& pose_msg, const sensor_ms
   pose.linear() = q_current.toRotationMatrix();
   pose.translation() = t_current;
 
-  ldet->addFrame(pose, pc_new);
+  ldet->addFrame(pose_msg->header.seq, pose, pc_new);
+
+  lihash_slam::Loop loop;
+  if (ldet->detect(loop)) {
+    lihash_slam::LoopClosure lc_msg;
+    lc_msg.header = pose_msg->header;
+    lc_msg.f1 = loop.frame1;
+    lc_msg.f2 = loop.frame2;
+    Eigen::Quaterniond q_current(loop.rel_pose.rotation());
+    Eigen::Vector3d t_current = loop.rel_pose.translation();    
+    lc_msg.rel_pose.orientation.x = q_current.x();
+    lc_msg.rel_pose.orientation.y = q_current.y();
+    lc_msg.rel_pose.orientation.z = q_current.z();
+    lc_msg.rel_pose.orientation.w = q_current.w();
+    lc_msg.rel_pose.position.x = t_current.x();
+    lc_msg.rel_pose.position.y = t_current.y();
+    lc_msg.rel_pose.position.z = t_current.z();
+    lc_pub_.publish(lc_msg);
+  }
 }
 
 int main(int argc, char** argv) {
@@ -63,8 +84,20 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "loop_detector");
   ros::NodeHandle nh("~");
 
-  // Creating PointCloudProcessor
-  ldet = new lihash_slam::LoopDetectorPose();
+  // Checking the LCD method
+  int lcd_method;
+  nh.param("lcd_method", lcd_method, 0);
+  ROS_INFO("LCD Method: %d", lcd_method);
+
+  // Creating the LoopDetector
+  if (lcd_method == 0) {
+    ldet = new lihash_slam::LoopDetectorPose();
+  } else {
+    ROS_ERROR("Unknown LCD method");
+    return 0;
+  }
+
+  lc_pub_ = nh.advertise<lihash_slam::LoopClosure>("lc", 10);
 
   ldet->readParams(nh);
   ldet->init();

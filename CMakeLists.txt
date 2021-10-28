@@ -44,6 +44,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   tf_conversions
   message_filters
+  message_generation
 )
 
 # Other packages
@@ -58,10 +59,21 @@ endif()
 # Printing the compiling flags
 message(STATUS "Compiler flags: ${CMAKE_CXX_FLAGS}")
 
+add_message_files(
+  FILES
+  LoopClosure.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
+
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters
+  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters message_runtime
   DEPENDS EIGEN3 PCL CERES
 )
 
