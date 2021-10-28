@@ -24,7 +24,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 
-// Liodom
+// LiHash SLAM
 #include <lihash_slam/defs.h>
 #include <lihash_slam/pc_processor.h>
 
