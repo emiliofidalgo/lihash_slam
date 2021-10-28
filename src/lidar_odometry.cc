@@ -78,6 +78,7 @@ LidarOdometer::LidarOdometer(const ros::NodeHandle& nh) :
   kf_stamp_(0.0),
   kf_points_(new PointCloud),
   lmap_(15),
+  lmap_frames_(15),
   acc_frames_(0) {
 
     readParams();
@@ -133,6 +134,11 @@ void LidarOdometer::readParams() {
   // Maximum number of frames to create a new KF
   nh_.param("kf_frames", kf_frames_, 10);
   ROS_INFO("New KF frames: %d", kf_frames_);
+
+  // Number of frames in the local map
+  nh_.param("lmap_frames", lmap_frames_, 15);
+  ROS_INFO("Local map frames: %d", lmap_frames_);
+  lmap_.setMaxFrames(lmap_frames_);
 }
 
 void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header& header) {

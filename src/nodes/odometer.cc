@@ -27,8 +27,6 @@
 
 lihash_slam::LidarOdometer* odom;
 
-ros::Subscriber pc_subs;
-
 void lidarClb(const sensor_msgs::PointCloud2ConstPtr& lidar_msg) {
   
   // Converting ROS message to PCL
@@ -49,7 +47,7 @@ int main(int argc, char** argv) {
   odom = new lihash_slam::LidarOdometer(nh);
 
   // ROS Interface
-  pc_subs = nh.subscribe("points", 1000, lidarClb);
+  ros::Subscriber pc_subs = nh.subscribe("points", 1000, lidarClb);
 
   // Receiving messages
   ros::spin();

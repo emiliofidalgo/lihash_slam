@@ -15,6 +15,7 @@
   <arg name="kf_dist" default="15.0" />
   <arg name="kf_rot" default="2.0" />
   <arg name="kf_frames" default="10" />
+  <arg name="lmap_frames" default="15" />
 
   <param name="use_sim_time" value="true"/>
 
@@ -51,6 +52,7 @@
       <param name="kf_dist" value="$(arg kf_dist)" />
       <param name="kf_rot" value="$(arg kf_rot)" />
       <param name="kf_frames" value="$(arg kf_frames)" />
+      <param name="lmap_frames" value="$(arg lmap_frames)" />
       
       <remap from="~points" to="preprocessor/edges" />
     </node>

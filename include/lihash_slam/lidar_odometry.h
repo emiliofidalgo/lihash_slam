@@ -113,6 +113,7 @@ class LidarOdometer {
   double kf_dist_;
   double kf_rot_;
   int kf_frames_;
+  int lmap_frames_;
   int acc_frames_;
 
   void readParams();
