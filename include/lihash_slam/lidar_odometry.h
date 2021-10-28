@@ -21,6 +21,7 @@
 #define INCLUDE_LIHASH_SLAM_LIDAR_ODOMETRY_H
 
 #include <numeric>
+#include <queue>
 
 // Ceres
 #include <ceres/ceres.h>
@@ -55,6 +56,23 @@
 
 namespace lihash_slam {
 
+// Local Map manager
+class LocalMapManager {
+ public:
+  explicit LocalMapManager(const size_t max_frames);
+  virtual ~LocalMapManager();
+
+  void addPointCloud(const PointCloud::Ptr& pc);
+  size_t getLocalMap(PointCloud::Ptr& map);
+  void setMaxFrames(const size_t max_nframes);
+
+ private:
+  PointCloud::Ptr total_points_;
+  size_t nframes_;
+  size_t max_nframes_;
+  std::queue<size_t> sizes_;
+};
+
 // Lidar Odometry
 class LidarOdometer {
  public:
@@ -83,6 +101,7 @@ class LidarOdometer {
   double param_t[3] = {0, 0, 0};
   Eigen::Isometry3d laser_to_base_;
   PointCloud::Ptr kf_points_;
+  LocalMapManager lmap_;
 
   // Params
   double min_range_;

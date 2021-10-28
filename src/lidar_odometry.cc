@@ -21,6 +21,53 @@
 
 namespace lihash_slam {
 
+LocalMapManager::LocalMapManager(const size_t max_frames) :
+  total_points_(new PointCloud),
+  nframes_(0),
+  max_nframes_(max_frames) {
+}
+
+LocalMapManager::~LocalMapManager() {
+}
+
+void LocalMapManager::addPointCloud(const PointCloud::Ptr& pc) {
+  
+  // Adding the current frame to the local map
+  *total_points_ += *pc;
+  nframes_++;
+  sizes_.push(pc->size());
+
+  // Removing frames at the beginning if required
+  if (nframes_ > max_nframes_) {
+    // Get the size of the first frame
+    size_t pc_size = sizes_.front();
+    sizes_.pop();
+
+    // Remove the points corresponding to the first frame
+    std::vector<int> ind(pc_size);
+    std::iota(std::begin(ind), std::end(ind), 0);
+    pcl::PointIndices::Ptr indices(new pcl::PointIndices);
+    indices->indices = ind;
+    pcl::ExtractIndices<Point> extract;
+    extract.setInputCloud(total_points_);
+    extract.setIndices(indices);
+    extract.setNegative(true);
+    extract.filter(*total_points_);
+
+    // Reducing the number of frames
+    nframes_--;
+  }
+}
+
+size_t LocalMapManager::getLocalMap(PointCloud::Ptr& map) {
+  map = total_points_;
+  return nframes_;
+}
+
+void LocalMapManager::setMaxFrames(const size_t max_nframes) {
+  max_nframes_ = max_nframes;
+}
+
 LidarOdometer::LidarOdometer(const ros::NodeHandle& nh) :
   nh_(nh),
   init_(false),
@@ -30,6 +77,7 @@ LidarOdometer::LidarOdometer(const ros::NodeHandle& nh) :
   prev_stamp_(0.0),
   kf_stamp_(0.0),
   kf_points_(new PointCloud),
+  lmap_(15),
   acc_frames_(0) {
 
     readParams();
@@ -102,6 +150,7 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
     }
 
     // Initializing the local map
+    lmap_.addPointCloud(pc_in);
     *kf_points_ += *pc_in;
 
     // Saving previous timestamp for computing the velocities
@@ -163,14 +212,22 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
     // Publishing the current pose
     publish(header, odom_);
 
+    // Compute the position of the detected edges in world coords
+    PointCloud::Ptr edges_map(new PointCloud);
+    pcl::transformPointCloud(*pc_in, *edges_map, odom_.matrix());
+
+    // Add these points to the local map
+    lmap_.addPointCloud(edges_map);
+
     // Checking if this should be a new KF
     if (!isNewKF(odom_)) {
-      // Compute the position of the detected edges according to the final estimate pose
-      PointCloud::Ptr edges_map(new PointCloud);
-      pcl::transformPointCloud(*pc_in, *edges_map, odom_.matrix());
+      // Compute the position of the edges in keyframe coords
+      Eigen::Isometry3d Tkl = prev_kf_.inverse() * odom_;
+      PointCloud::Ptr edges_kf(new PointCloud);
+      pcl::transformPointCloud(*pc_in, *edges_kf, Tkl.matrix());
 
-      // Add these points to the local map for future associations
-      *kf_points_ += *edges_map;
+      // Add these points to the keyframe points
+      *kf_points_ += *edges_kf;
 
       // We increment the number of processed frames after a new keyframe
       acc_frames_++;
@@ -211,16 +268,12 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
       // Publish keyframe points
       sensor_msgs::PointCloud2 kf_points_msg;
       pcl::toROSMsg(*kf_points_, kf_points_msg);
-      //kf_points_msg.header.frame_id = header.frame_id;
       kf_points_msg.header.frame_id = "keyframe";
       kf_points_msg.header.stamp.fromSec(kf_stamp_);
       kf_pc_pub_.publish(kf_points_msg);
 
       // Create a new KF
-      prev_kf_ = prev_kf_ * odom_;
-      Eigen::Isometry3d delta_odom = prev_odom_.inverse() * odom_;
-      prev_odom_ = Eigen::Isometry3d::Identity();
-      odom_ = prev_odom_ * delta_odom;
+      prev_kf_ = odom_;
       
       // Cleaning up the local map
       kf_points_->clear();
@@ -243,10 +296,14 @@ void LidarOdometer::addEdgeConstraints(const PointCloud::Ptr& edges,
   PointCloud::Ptr edges_map(new PointCloud);
   pcl::transformPointCloud(*edges, *edges_map, pose.matrix());
 
+  // Getting the local map
+  PointCloud::Ptr local_map(new PointCloud);
+  lmap_.getLocalMap(local_map);
+
   // Trying to match against the local map
   int correct_matches = 0;
   pcl::KdTreeFLANN<Point>::Ptr tree(new pcl::KdTreeFLANN<Point>);
-  tree->setInputCloud(kf_points_);
+  tree->setInputCloud(local_map);
   for (size_t i = 0; i < edges_map->points.size(); i++) {
     std::vector<int> indices;
     std::vector<float> sq_dist;
@@ -256,9 +313,9 @@ void LidarOdometer::addEdgeConstraints(const PointCloud::Ptr& edges,
       std::vector<Eigen::Vector3d> near_corners;
       Eigen::Vector3d center(0, 0, 0);
       for (int j = 0; j < 5; j++) {
-        Eigen::Vector3d tmp(kf_points_->points[indices[j]].x,
-                            kf_points_->points[indices[j]].y,
-                            kf_points_->points[indices[j]].z);
+        Eigen::Vector3d tmp(local_map->points[indices[j]].x,
+                            local_map->points[indices[j]].y,
+                            local_map->points[indices[j]].z);
         center = center + tmp;
         near_corners.push_back(tmp);
       }
@@ -279,13 +336,13 @@ void LidarOdometer::addEdgeConstraints(const PointCloud::Ptr& edges,
                                    edges->points[i].y,
                                    edges->points[i].z);
 
-        Eigen::Vector3d pt_a(kf_points_->points[indices[0]].x,
-                             kf_points_->points[indices[0]].y,
-                             kf_points_->points[indices[0]].z);
+        Eigen::Vector3d pt_a(local_map->points[indices[0]].x,
+                             local_map->points[indices[0]].y,
+                             local_map->points[indices[0]].z);
       
-        Eigen::Vector3d pt_b(kf_points_->points[indices[1]].x,
-                             kf_points_->points[indices[1]].y,
-                             kf_points_->points[indices[1]].z);
+        Eigen::Vector3d pt_b(local_map->points[indices[1]].x,
+                             local_map->points[indices[1]].y,
+                             local_map->points[indices[1]].z);
 
         ceres::CostFunction* cost_function = Point2LineFactor::create(curr_point, pt_a, pt_b, min_range_, max_range_);
         problem->AddResidualBlock(cost_function, loss, param_q, param_t);
@@ -323,8 +380,9 @@ bool LidarOdometer::getBaseToLidarTf(const std::string& frame_id) {
 
 bool LidarOdometer::isNewKF(const Eigen::Isometry3d& pose) {
   
-  double dtrans = pose.translation().norm();  
-  double drot = Eigen::AngleAxisd(pose.linear()).angle();
+  Eigen::Isometry3d dkf = prev_kf_.inverse() * pose;
+  double dtrans = dkf.translation().norm();
+  double drot = Eigen::AngleAxisd(dkf.linear()).angle();
 
   //ROS_INFO("KF Distance: %.2f", dtrans);
   //ROS_INFO("KF Rotation: %.2f", drot);
@@ -339,9 +397,8 @@ bool LidarOdometer::isNewKF(const Eigen::Isometry3d& pose) {
 
 void LidarOdometer::publish(const std_msgs::Header& header, const Eigen::Isometry3d& pose) {
 
-  // Transform to base_link frame before publication
-  Eigen::Isometry3d Twl = prev_kf_ * pose;
-  Eigen::Isometry3d odom_base_link = Twl * laser_to_base_;
+  // Transform to base_link frame before publication  
+  Eigen::Isometry3d odom_base_link = pose * laser_to_base_;
 
   Eigen::Quaterniond q_current(odom_base_link.rotation());
   Eigen::Vector3d t_current = odom_base_link.translation();
