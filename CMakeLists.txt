@@ -45,6 +45,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   message_filters
   message_generation
+  image_transport
+  cv_bridge
 )
 
 # Other packages
@@ -73,7 +75,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters message_runtime
+  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters message_runtime image_transport cv_bridge
   DEPENDS EIGEN3 PCL CERES
 )
 
@@ -108,6 +110,8 @@ target_link_libraries(odometer
 add_executable(loop_detector
     include/lihash_slam/loop_detector_base.hpp
     src/loop_detector_pose.cc
+    src/iscGenerationClass.cpp
+    src/loop_detector_isc.cc
     src/nodes/loop_detector.cc)
 target_link_libraries(loop_detector
     ${catkin_LIBRARIES}

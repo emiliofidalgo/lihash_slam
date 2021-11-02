@@ -23,9 +23,16 @@
   
   <!-- Loop Detector -->
   <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC -->
+  
+  <!-- LCD Pose -->
   <arg name="dist_th" default="25.0" />
   <arg name="accum_dist_th" default="25.0" />
   <arg name="score_th" default="2.5" />
+
+  <!-- LCD ISC -->
+  <arg name="rings" default="60" />
+  <arg name="sectors" default="60" />
+  <arg name="max_dist" default="40.0" />
 
   <param name="use_sim_time" value="true"/>
 
@@ -77,6 +84,9 @@
       <param name="dist_th" value="$(arg dist_th)" />
       <param name="accum_dist_th" value="$(arg accum_dist_th)" />
       <param name="score_th" value="$(arg score_th)" />
+      <param name="rings" value="$(arg rings)" />
+      <param name="sectors" value="$(arg sectors)" />
+      <param name="max_dist" value="$(arg max_dist)" />
       
       <remap from="~pose"   to="odometer/keyframes/pose" />
       <remap from="~points" to="odometer/keyframes/points" />

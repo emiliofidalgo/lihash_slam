@@ -17,36 +17,44 @@
 * along with lihash_slam. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef INCLUDE_LIHASH_SLAM_LOOP_DETECTOR_POSE_H
-#define INCLUDE_LIHASH_SLAM_LOOP_DETECTOR_POSE_H
+#ifndef INCLUDE_LIHASH_SLAM_LOOP_DETECTOR_ISC_H
+#define INCLUDE_LIHASH_SLAM_LOOP_DETECTOR_ISC_H
 
 #include <lihash_slam/loop_detector_base.hpp>
+#include <iscGenerationClass.h>
 
 // PCL
 #include <pcl/registration/ndt.h>
 
+// ROS
+#include <sensor_msgs/Image.h>
+#include <cv_bridge/cv_bridge.h>
+
 namespace lihash_slam {
 
-// LC detector based on distance. Similar to HDL Graph SLAM
-class LoopDetectorPose : public LoopDetector {
+// LC detector based on Intensity Scan Context (see ISC-LOAM)
+class LoopDetectorISC : public LoopDetector {
  public:
-  LoopDetectorPose();
-  virtual ~LoopDetectorPose();
+  LoopDetectorISC();
+  virtual ~LoopDetectorISC();
 
   void readParams(const ros::NodeHandle& nh);
   void init();
   void addFrame(const int id, const Eigen::Isometry3d& pose, const PointCloud::Ptr& points);
   bool detect(Loop& loop);
+ 
  private:
+  ISCGenerationClass gen_;
+  ros::Publisher isc_pub_;
   std::vector<LoopFrame> frames;
-  std::vector<double> acc_dists;
+  ros::NodeHandle nh_aux_;
 
   // Params
-  double dist_th_;
-  double accum_dist_th_;
-  double score_th_;
+  int rings_;
+  int sectors_;
+  double max_dist_;
 };
 
 } // namespace lihash_slam
 
-#endif // INCLUDE_LIHASH_SLAM_LOOP_DETECTOR_POSE_H
+#endif // INCLUDE_LIHASH_SLAM_LOOP_DETECTOR_ISC_H

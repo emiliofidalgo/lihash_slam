@@ -32,6 +32,7 @@
 // LiHash SLAM
 #include <lihash_slam/defs.h>
 #include <lihash_slam/loop_detector_pose.h>
+#include <lihash_slam/loop_detector_isc.h>
 #include <lihash_slam/LoopClosure.h>
 
 lihash_slam::LoopDetector* ldet;
@@ -92,6 +93,8 @@ int main(int argc, char** argv) {
   // Creating the LoopDetector
   if (lcd_method == 0) {
     ldet = new lihash_slam::LoopDetectorPose();
+  } else if (lcd_method == 1) {
+    ldet = new lihash_slam::LoopDetectorISC();
   } else {
     ROS_ERROR("Unknown LCD method");
     return 0;
