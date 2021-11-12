@@ -92,6 +92,17 @@
       <remap from="~points" to="odometer/keyframes/points" />
     </node>
 
+    <!-- Loop Detector -->
+    <node pkg="lihash_slam"
+          type="mapper"
+          name="mapper"
+          output="screen">      
+      
+      <remap from="~pose"   to="odometer/keyframes/pose" />
+      <remap from="~points" to="odometer/keyframes/points" />
+      <remap from="~lc"     to="loop_detector/lc" />
+    </node>
+
   </group>
 
   <node pkg="tf"
