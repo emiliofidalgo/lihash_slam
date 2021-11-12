@@ -108,8 +108,8 @@ bool LoopDetectorISC::detect(Loop& loop) {
       Eigen::Isometry3d rel_pose;
       rel_pose = ndt.getFinalTransformation().cast<double>();
       // Filling data on loop struct
-      loop.frame1 = cur_frame->id;
-      loop.frame2 = gen_.matched_frame_id[0];
+      loop.frame1 = gen_.matched_frame_id[0];
+      loop.frame2 = cur_frame->id;      
       loop.rel_pose = rel_pose;
       response = true;
 

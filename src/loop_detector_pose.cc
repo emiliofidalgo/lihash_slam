@@ -140,8 +140,8 @@ bool LoopDetectorPose::detect(Loop& loop) {
     ROS_INFO("Loop not found");
   } else {    
     // Filling data on loop struct
-    loop.frame1 = cur_frame->id;
-    loop.frame2 = best_candidate->id;
+    loop.frame1 = best_candidate->id;
+    loop.frame2 = cur_frame->id;    
     loop.rel_pose = rel_pose;
     response = true;
 
