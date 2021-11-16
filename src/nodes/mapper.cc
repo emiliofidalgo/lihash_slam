@@ -294,6 +294,9 @@ int main(int argc, char** argv) {
   // Receiving messages
   ros::spin();
 
+  // Last mapping procedure
+  mapping(ros::TimerEvent());
+
   return 0;
 }
  
