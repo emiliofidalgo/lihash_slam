@@ -27,6 +27,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 
 // PCL
 #include <pcl/common/transforms.h>
@@ -48,7 +50,9 @@ lihash_slam::Map* map;
 bool lc_added;
 
 // ROS
-ros::Publisher map_pub;
+ros::Publisher map_points_pub;
+ros::Publisher map_kfs_pub;
+ros::Publisher map_cells_pub;
 
 void syncClb(const geometry_msgs::PoseStampedConstPtr& pose_msg, const sensor_msgs::PointCloud2ConstPtr& lidar_msg) {
   
@@ -123,17 +127,139 @@ void mapping(const ros::TimerEvent& event) {
 }
 
 void publishData(const ros::TimerEvent& event) {
+
+  ros::Time time = ros::Time::now();
   
   // Publishing the current map
-  if (map_pub.getNumSubscribers() > 0) {
+  if (map_points_pub.getNumSubscribers() > 0) {
     lihash_slam::PointCloud::Ptr m = map->getMapPoints();
     sensor_msgs::PointCloud2 cloud_msg;
     pcl::toROSMsg(*m, cloud_msg);
     cloud_msg.header.frame_id = "world";
-    map_pub.publish(cloud_msg);
+    cloud_msg.header.stamp = time;
+    map_points_pub.publish(cloud_msg);
   }
 
-  // TODO Publish KFs and Cells
+  // Publishing cells
+  if (map_cells_pub.getNumSubscribers() > 0) {
+    // Creating the template msg
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "world";
+    marker.header.stamp = time;
+    marker.ns = "cells";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::CUBE_LIST;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.scale.x = 20.0;
+    marker.scale.y = 20.0;
+    marker.scale.z = 25.0;
+    marker.color.a = 0.05;
+    marker.color.g = 1.0;
+    marker.pose.orientation.w = 1.0;
+
+    std::vector<lihash_slam::Cell*>* cells = map->getCells();
+    marker.points.resize(cells->size());
+    for (size_t i = 0; i < cells->size(); i++) {
+      Eigen::Vector3d pose = cells->at(i)->getPose();
+      marker.points[i].x = pose.x();
+      marker.points[i].y = pose.y();
+      marker.points[i].z = pose.z();
+      marker.colors.push_back(marker.color);
+    }
+
+    // Publish the marker of cells
+    map_cells_pub.publish(marker);
+  }
+
+  // Publishing keyframes
+  if (map_kfs_pub.getNumSubscribers() > 0) {
+    // Keyframes
+    visualization_msgs::Marker marker_kfs;
+    marker_kfs.header.frame_id = "world";
+    marker_kfs.header.stamp = time;
+    marker_kfs.ns = "kfs";
+    marker_kfs.id = 0;
+    marker_kfs.type = visualization_msgs::Marker::SPHERE_LIST;
+    marker_kfs.action = visualization_msgs::Marker::ADD;
+    marker_kfs.scale.x = 1.25;
+    marker_kfs.scale.y = 1.25;
+    marker_kfs.scale.z = 1.25;
+    marker_kfs.color.a = 0.5;
+    marker_kfs.color.b = 1.0;
+    marker_kfs.pose.orientation.w = 1.0;
+
+    // Links between them
+    visualization_msgs::Marker marker_links;
+    marker_links.header.frame_id = "world";
+    marker_links.header.stamp = time;
+    marker_links.ns = "kfs";
+    marker_links.id = 1;
+    marker_links.type = visualization_msgs::Marker::LINE_STRIP;
+    marker_links.action = visualization_msgs::Marker::ADD;
+    marker_links.scale.x = 0.25;
+    marker_links.color.a = 0.5;    
+    marker_links.color.b = 1.0;
+    marker_links.pose.orientation.w = 1.0;
+
+    // Loops
+    visualization_msgs::Marker marker_loops;
+    marker_loops.header.frame_id = "world";
+    marker_loops.header.stamp = time;
+    marker_loops.ns = "kfs";
+    marker_loops.id = 2;
+    marker_loops.type = visualization_msgs::Marker::LINE_LIST;
+    marker_loops.action = visualization_msgs::Marker::ADD;
+    marker_loops.scale.x = 0.25;
+    marker_loops.color.a = 0.5;    
+    marker_loops.color.r = 1.0;
+    marker_loops.pose.orientation.w = 1.0;
+
+    std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
+    marker_kfs.points.resize(kfs->size());
+    marker_links.points.resize(kfs->size());
+    for (size_t i = 0; i < kfs->size(); i++) {
+      Eigen::Vector3d pose = kfs->at(i)->pose.translation();
+      marker_kfs.points[i].x = pose.x();
+      marker_kfs.points[i].y = pose.y();
+      marker_kfs.points[i].z = pose.z();      
+      marker_kfs.colors.push_back(marker_kfs.color);
+
+      marker_links.points[i].x = pose.x();
+      marker_links.points[i].y = pose.y();
+      marker_links.points[i].z = pose.z();
+      marker_links.colors.push_back(marker_links.color);
+
+      // Checking loops with this keyframe
+      for (size_t j = 0; j < kfs->at(i)->loops.size(); j++) {
+        geometry_msgs::Point pose1;        
+        pose1.x = pose.x();
+        pose1.y = pose.y();
+        pose1.z = pose.z();
+
+        // LC
+        int cand_ind = kfs->at(i)->loops[j];
+        geometry_msgs::Point pose2;
+        pose2.x = kfs->at(cand_ind)->pose.translation().x();
+        pose2.y = kfs->at(cand_ind)->pose.translation().y();
+        pose2.z = kfs->at(cand_ind)->pose.translation().z();        
+
+        marker_loops.points.push_back(pose1);
+        marker_loops.points.push_back(pose2);
+        marker_loops.colors.push_back(marker_loops.color);
+        marker_loops.colors.push_back(marker_loops.color);
+      }
+    }
+
+    // Marker array
+    visualization_msgs::MarkerArray markers;
+    markers.markers.push_back(marker_kfs);
+    markers.markers.push_back(marker_links);
+    if (marker_loops.points.size() > 0) {
+      markers.markers.push_back(marker_loops);
+    }
+
+    map_kfs_pub.publish(markers);
+  }
 }
 
 int main(int argc, char** argv) {
@@ -157,7 +283,9 @@ int main(int argc, char** argv) {
   ros::Subscriber lc_sub = nh.subscribe("lc", 100, lcClb);
 
   // Publishers
-  map_pub = nh.advertise<sensor_msgs::PointCloud2>("map", 120, true);
+  map_points_pub = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);
+  map_kfs_pub    = nh.advertise<visualization_msgs::MarkerArray>("map/keyframes", 120, true);
+  map_cells_pub  = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
 
   // Timers
   ros::Timer mapper_timer    = nh.createTimer(ros::Duration(2.0), mapping);
@@ -168,3 +296,4 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+ 

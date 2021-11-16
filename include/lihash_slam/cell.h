@@ -39,18 +39,21 @@ namespace lihash_slam {
 class Cell {
  public:
   Cell();
-  explicit Cell(const PointCloud::Ptr& pc);
+  explicit Cell(const Eigen::Vector3d& pose);
+  explicit Cell(const PointCloud::Ptr& pc, const Eigen::Vector3d& pose);
   virtual ~Cell();
   
   void addPoint(const Point& p);
   void addPoints(const PointCloud::Ptr& pc);
   void clear();
   void filter(pcl::VoxelGrid<Point>& filt);
-  bool modified();
+  bool modified();  
   PointCloud::Ptr getPoints();
+  Eigen::Vector3d getPose();
 
  private:
   PointCloud::Ptr points_;
+  Eigen::Vector3d pose_;
   bool modified_;
 };
 

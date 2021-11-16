@@ -45,8 +45,10 @@ class Map {
   void addKeyframe(lihash_slam::Keyframe* kf);
   void addLoopClosure(const int f1, const int f2, const Eigen::Isometry3d& rel_pose);
   void optimize(const int iters = 1000);
-  PointCloud::Ptr getMapPoints();
+  PointCloud::Ptr getMapPoints();  
   PointCloud::Ptr getLocalMapPoints(const Eigen::Isometry3d& pose, int cells_xy = 2, int cells_z = 1);
+  std::vector<Cell*>* getCells();
+  std::vector<Keyframe*>* getKeyframes();
  private:
   double voxel_xysize_; // Assume the same size in X and Y dimensions
   double inv_voxel_xysize_;

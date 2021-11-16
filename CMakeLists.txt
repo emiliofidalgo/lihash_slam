@@ -41,6 +41,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
   sensor_msgs
+  visualization_msgs
   tf
   eigen_conversions
   pcl_conversions
@@ -79,7 +80,7 @@ generate_messages(
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters message_runtime image_transport cv_bridge
+  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs visualization_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters message_runtime image_transport cv_bridge
   DEPENDS EIGEN3 PCL CERES G2O
 )
 

@@ -93,7 +93,7 @@ void Map::addKeyframe(lihash_slam::Keyframe* kf) {
     Eigen::Isometry3d rel_pose = prev_kf->pose.inverse() * kf->pose;
     g2o::EdgeSE3* e(new g2o::EdgeSE3());
     e->setMeasurement(rel_pose);
-    //e->setInformation(im);
+    e->setInformation(im);
     e->vertices()[0] = prev_kf->node;
     e->vertices()[1] = kf->node;                     
     optimizer_.addEdge(e);
@@ -113,20 +113,25 @@ void Map::addLoopClosure(const int f1, const int f2, const Eigen::Isometry3d& re
 
   g2o::EdgeSE3* e(new g2o::EdgeSE3());
   e->setMeasurement(rel_pose);
-  //e->setInformation(im);
+  e->setInformation(im);
   e->vertices()[0] = keyframes_[f1]->node;
   e->vertices()[1] = keyframes_[f2]->node;
   g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
   rk->setDelta(1.0);
   e->setRobustKernel(rk);                    
   optimizer_.addEdge(e);
+
+  // Adding the corresponding loop
+  keyframes_[f2]->loops.push_back(f1);
 }
 
 void Map::optimize(const int iters) {
   
   // Optimize
-  optimizer_.initializeOptimization();
-  optimizer_.optimize(iters);
+  if (optimizer_.vertices().size() > 2) {
+    optimizer_.initializeOptimization();
+    optimizer_.optimize(iters);
+  }
 
   // Update the pose on every keyframe
   for (size_t i = 0; i < keyframes_.size(); i++) {
@@ -175,7 +180,8 @@ void Map::addMapPoints(const PointCloud::Ptr& pc_in, const Eigen::Isometry3d& po
     Cell* cell;
     if (cells_.find(key) == cells_.end()) {
       // Cell is not in the map, so it is added
-      cell = new Cell();
+      Eigen::Vector3d p(voxel_x, voxel_y, voxel_z);
+      cell = new Cell(p);
       cells_[key] = cell;
       cells_vector_.push_back(cell);
     } else {
@@ -253,5 +259,14 @@ PointCloud::Ptr Map::getLocalMapPoints(const Eigen::Isometry3d& pose, int cells_
 
   return total_points;
 }
+
+std::vector<Cell*>* Map::getCells() {
+  return &cells_vector_;
+}
+
+std::vector<Keyframe*>* Map::getKeyframes() {
+  return &keyframes_;
+}
+
 
 }  // namespace lihash_slam

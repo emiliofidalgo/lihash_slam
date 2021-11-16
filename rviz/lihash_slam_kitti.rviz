@@ -5,7 +5,6 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Odometry1/Shape1
-        - /Map1
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz/Selection
@@ -209,17 +208,33 @@ Visualization Manager:
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
-      Name: Map
+      Name: Map - Points
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
       Size (Pixels): 1
       Size (m): 0.009999999776482582
       Style: Points
-      Topic: /lihash_slam/mapper/map
+      Topic: /lihash_slam/mapper/map/points
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /lihash_slam/mapper/map/cells
+      Name: Map - Cells
+      Namespaces:
+        cells: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /lihash_slam/mapper/map/keyframes
+      Name: Map - Keyframes
+      Namespaces:
+        kfs: true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
@@ -285,5 +300,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1856
-  X: 64
+  X: 1984
   Y: 27

@@ -44,6 +44,7 @@ class Keyframe {
   Eigen::Isometry3d pose;    // Pose in world coords
   PointCloud::Ptr points;    // Points in KF coords
   g2o::VertexSE3* node;
+  std::vector<int> loops;
 };
 
 }  // namespace lihash_slam

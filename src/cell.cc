@@ -23,12 +23,21 @@ namespace lihash_slam {
 
 Cell::Cell() :
   points_(new PointCloud),
+  pose_(Eigen::Vector3d::Zero()),
   modified_(false) {
     // TODO Prereserve memory according to a maximum number of points.
 }
 
-Cell::Cell(const PointCloud::Ptr& pc) :
+Cell::Cell(const Eigen::Vector3d& pose) :
   points_(new PointCloud),
+  pose_(pose),
+  modified_(false) {
+    // TODO Prereserve memory according to a maximum number of points.
+}
+
+Cell::Cell(const PointCloud::Ptr& pc, const Eigen::Vector3d& pose) :
+  points_(new PointCloud),
+  pose_(pose),
   modified_(true) {
     // TODO Prereserve memory according to a maximum number of points.
     *points_ += *pc;
@@ -67,6 +76,10 @@ bool Cell::modified() {
 
 PointCloud::Ptr Cell::getPoints() {
   return points_;
+}
+
+Eigen::Vector3d Cell::getPose() {
+  return pose_;
 }
 
 }  // namespace lihash_slam
