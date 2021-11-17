@@ -88,19 +88,17 @@
       <param name="sectors" value="$(arg sectors)" />
       <param name="max_dist" value="$(arg max_dist)" />
       
-      <remap from="~pose"   to="odometer/keyframes/pose" />
-      <remap from="~points" to="odometer/keyframes/points" />
+      <remap from="~kfs" to="odometer/kfs" />
     </node>
 
-    <!-- Loop Detector -->
+    <!-- Mapper -->
     <node pkg="lihash_slam"
           type="mapper"
           name="mapper"
           output="screen">      
       
-      <remap from="~pose"   to="odometer/keyframes/pose" />
-      <remap from="~points" to="odometer/keyframes/points" />
-      <remap from="~lc"     to="loop_detector/lc" />
+      <remap from="~kfs"   to="odometer/kfs" />
+      <remap from="~lc"    to="loop_detector/lc" />
     </node>
 
   </group>

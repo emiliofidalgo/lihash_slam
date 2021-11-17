@@ -22,8 +22,6 @@
 #include <tf/transform_datatypes.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
 
 // PCL
 #include <pcl/common/transforms.h>
@@ -31,6 +29,7 @@
 
 // LiHash SLAM
 #include <lihash_slam/defs.h>
+#include <lihash_slam/KeyframeMessage.h>
 #include <lihash_slam/loop_detector_pose.h>
 #include <lihash_slam/loop_detector_isc.h>
 #include <lihash_slam/LoopClosure.h>
@@ -39,31 +38,31 @@ lihash_slam::LoopDetector* ldet;
 
 ros::Publisher lc_pub_;
 
-void syncClb(const geometry_msgs::PoseStampedConstPtr& pose_msg, const sensor_msgs::PointCloud2ConstPtr& lidar_msg) {
+void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   
   // Converting ROS message to PCL
   lihash_slam::PointCloud::Ptr pc_new(new lihash_slam::PointCloud);
-  pcl::fromROSMsg(*lidar_msg, *pc_new);
+  pcl::fromROSMsg(kf_msg->points, *pc_new);
 
   // Creating an isometry
-  Eigen::Quaterniond q_current(pose_msg->pose.orientation.w,
-                               pose_msg->pose.orientation.x,
-                               pose_msg->pose.orientation.y,
-                               pose_msg->pose.orientation.z);
-  Eigen::Vector3d t_current(pose_msg->pose.position.x,
-                            pose_msg->pose.position.y,
-                            pose_msg->pose.position.z);
+  Eigen::Quaterniond q_current(kf_msg->pose.orientation.w,
+                               kf_msg->pose.orientation.x,
+                               kf_msg->pose.orientation.y,
+                               kf_msg->pose.orientation.z);
+  Eigen::Vector3d t_current(kf_msg->pose.position.x,
+                            kf_msg->pose.position.y,
+                            kf_msg->pose.position.z);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.linear() = q_current.toRotationMatrix();
   pose.translation() = t_current;
 
-  ldet->addFrame(pose_msg->header.seq, pose, pc_new);
+  ldet->addFrame(kf_msg->header.seq, pose, pc_new);
 
   lihash_slam::Loop loop;
   if (ldet->detect(loop)) {
     lihash_slam::LoopClosure lc_msg;
-    lc_msg.header = pose_msg->header;
+    lc_msg.header = kf_msg->header;
     lc_msg.f1 = loop.frame1;
     lc_msg.f2 = loop.frame2;
     Eigen::Quaterniond q_current(loop.rel_pose.rotation());
@@ -106,10 +105,7 @@ int main(int argc, char** argv) {
   ldet->init();
 
   // ROS Interface
-  message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub(nh, "pose", 100);
-  message_filters::Subscriber<sensor_msgs::PointCloud2> points_sub(nh, "points", 100);
-  message_filters::TimeSynchronizer<geometry_msgs::PoseStamped, sensor_msgs::PointCloud2> sync(pose_sub, points_sub, 100);
-  sync.registerCallback(boost::bind(&syncClb, _1, _2));
+  ros::Subscriber kf_subs = nh.subscribe("kfs", 1000, keyframeClb);
 
   // Receiving messages
   ros::spin();

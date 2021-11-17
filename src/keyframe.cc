@@ -42,4 +42,24 @@ Keyframe::~Keyframe() {
   points->clear();
 }
 
+void Keyframe::addFramePoses(const std::vector<geometry_msgs::Pose>& rel_poses) {
+  frame_poses.clear();
+  for (size_t i = 0; i < rel_poses.size(); i++) {
+    // Creating an isometry
+    Eigen::Quaterniond q_current(rel_poses[i].orientation.w,
+                                 rel_poses[i].orientation.x,
+                                 rel_poses[i].orientation.y,
+                                 rel_poses[i].orientation.z);
+    Eigen::Vector3d t_current(rel_poses[i].position.x,
+                              rel_poses[i].position.y,
+                              rel_poses[i].position.z);
+    
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+    pose.linear() = q_current.toRotationMatrix();
+    pose.translation() = t_current;
+
+    frame_poses.push_back(pose);        
+  }
+}
+
 }  // namespace lihash_slam

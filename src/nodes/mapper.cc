@@ -25,8 +25,6 @@
 #include <tf/transform_datatypes.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -36,6 +34,7 @@
 
 // LiHash SLAM
 #include <lihash_slam/defs.h>
+#include <lihash_slam/KeyframeMessage.h>
 #include <lihash_slam/map.h>
 #include <lihash_slam/LoopClosure.h>
 
@@ -54,29 +53,30 @@ ros::Publisher map_points_pub;
 ros::Publisher map_kfs_pub;
 ros::Publisher map_cells_pub;
 
-void syncClb(const geometry_msgs::PoseStampedConstPtr& pose_msg, const sensor_msgs::PointCloud2ConstPtr& lidar_msg) {
+void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   
   // Converting ROS message to PCL
   lihash_slam::PointCloud::Ptr pc_new(new lihash_slam::PointCloud);
-  pcl::fromROSMsg(*lidar_msg, *pc_new);
+  pcl::fromROSMsg(kf_msg->points, *pc_new);
 
   // Creating an isometry
-  Eigen::Quaterniond q_current(pose_msg->pose.orientation.w,
-                               pose_msg->pose.orientation.x,
-                               pose_msg->pose.orientation.y,
-                               pose_msg->pose.orientation.z);
-  Eigen::Vector3d t_current(pose_msg->pose.position.x,
-                            pose_msg->pose.position.y,
-                            pose_msg->pose.position.z);
+  Eigen::Quaterniond q_current(kf_msg->pose.orientation.w,
+                               kf_msg->pose.orientation.x,
+                               kf_msg->pose.orientation.y,
+                               kf_msg->pose.orientation.z);
+  Eigen::Vector3d t_current(kf_msg->pose.position.x,
+                            kf_msg->pose.position.y,
+                            kf_msg->pose.position.z);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.linear() = q_current.toRotationMatrix();
   pose.translation() = t_current;
 
   lihash_slam::Keyframe* kf = new lihash_slam::Keyframe(
-                                pose_msg->header.seq,
+                                kf_msg->header.seq,
                                 pose,
                                 pc_new);
+  kf->addFramePoses(kf_msg->rel_poses);
   queue_kfs.push_back(kf);
 }
 
@@ -274,10 +274,7 @@ int main(int argc, char** argv) {
 
   // ROS Interface
   // Keframes
-  message_filters::Subscriber<geometry_msgs::PoseStamped> pose_sub(nh, "pose", 120);
-  message_filters::Subscriber<sensor_msgs::PointCloud2> points_sub(nh, "points", 120);
-  message_filters::TimeSynchronizer<geometry_msgs::PoseStamped, sensor_msgs::PointCloud2> sync(pose_sub, points_sub, 100);
-  sync.registerCallback(boost::bind(&syncClb, _1, _2));
+  ros::Subscriber kf_subs = nh.subscribe("kfs", 1000, keyframeClb);
   
   // LCs
   ros::Subscriber lc_sub = nh.subscribe("lc", 100, lcClb);

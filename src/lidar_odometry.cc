@@ -84,10 +84,9 @@ LidarOdometer::LidarOdometer(const ros::NodeHandle& nh) :
     readParams();
 
     // Publishers
-    odom_pub_ = nh_.advertise<nav_msgs::Odometry>("odom", 10);
+    odom_pub_  = nh_.advertise<nav_msgs::Odometry>("odom", 10);
     twist_pub_ = nh_.advertise<geometry_msgs::TwistStamped>("twist", 10);
-    kf_pc_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("keyframes/points", 10);
-    kf_pose_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("keyframes/pose", 10);
+    kf_pub_    = nh_.advertise<lihash_slam::KeyframeMessage>("kfs", 50);
 }
 
 LidarOdometer::~LidarOdometer() {
@@ -237,24 +236,29 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
 
       // We increment the number of processed frames after a new keyframe
       acc_frames_++;
+
+      // Accumulate the current pose wrt the KF
+      kf_rel_poses_.push_back(Tkl);
       
     } else {
 
-      // Publishing keyframe pose
+      // Publishing keyframe
       Eigen::Quaterniond q_current(prev_kf_.rotation());
-      Eigen::Vector3d t_current = prev_kf_.translation();      
+      Eigen::Vector3d t_current = prev_kf_.translation();
 
-      geometry_msgs::PoseStamped kf_pose_msg;
-      kf_pose_msg.header.frame_id = fixed_frame_;
-      kf_pose_msg.header.stamp.fromSec(kf_stamp_);
-      kf_pose_msg.pose.orientation.x = q_current.x();
-      kf_pose_msg.pose.orientation.y = q_current.y();
-      kf_pose_msg.pose.orientation.z = q_current.z();
-      kf_pose_msg.pose.orientation.w = q_current.w();
-      kf_pose_msg.pose.position.x = t_current.x();
-      kf_pose_msg.pose.position.y = t_current.y();
-      kf_pose_msg.pose.position.z = t_current.z();
-      kf_pose_pub_.publish(kf_pose_msg);
+      // Creating the base message
+      lihash_slam::KeyframeMessage kf_msg;
+      kf_msg.header.frame_id = fixed_frame_;
+      kf_msg.header.stamp.fromSec(kf_stamp_);
+
+      // Filling the pose      
+      kf_msg.pose.orientation.x = q_current.x();
+      kf_msg.pose.orientation.y = q_current.y();
+      kf_msg.pose.orientation.z = q_current.z();
+      kf_msg.pose.orientation.w = q_current.w();
+      kf_msg.pose.position.x = t_current.x();
+      kf_msg.pose.position.y = t_current.y();
+      kf_msg.pose.position.z = t_current.z();   
 
       // Publishing the transform between odom and keyframe
       tf::Transform transform;
@@ -263,20 +267,35 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
       transform.setRotation(q);
       ros::Time kf_time;
       kf_time.fromSec(kf_stamp_);
-      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, kf_time, fixed_frame_, "keyframe"));
+      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, kf_time, fixed_frame_, "keyframe"));   
 
-      // Voxelize the points of the keyframe
+      // Filling points
       pcl::VoxelGrid<Point> voxel_filter;
       voxel_filter.setLeafSize(0.4, 0.4, 0.4);
       voxel_filter.setInputCloud(kf_points_);
       voxel_filter.filter(*kf_points_);
+      pcl::toROSMsg(*kf_points_, kf_msg.points);
 
-      // Publish keyframe points
-      sensor_msgs::PointCloud2 kf_points_msg;
-      pcl::toROSMsg(*kf_points_, kf_points_msg);
-      kf_points_msg.header.frame_id = "keyframe";
-      kf_points_msg.header.stamp.fromSec(kf_stamp_);
-      kf_pc_pub_.publish(kf_points_msg);
+      // Filling frame relative poses
+      for (size_t i = 0; i < kf_rel_poses_.size(); i++) {
+        // Getting relative pose
+        Eigen::Quaterniond q_current(kf_rel_poses_[i].rotation());
+        Eigen::Vector3d t_current = kf_rel_poses_[i].translation();
+        geometry_msgs::Pose rel_pose;
+        rel_pose.orientation.x = q_current.x();
+        rel_pose.orientation.y = q_current.y();
+        rel_pose.orientation.z = q_current.z();
+        rel_pose.orientation.w = q_current.w();
+        rel_pose.position.x = t_current.x();
+        rel_pose.position.y = t_current.y();
+        rel_pose.position.z = t_current.z(); 
+
+        // Adding this relative pose
+        kf_msg.rel_poses.push_back(rel_pose);
+      }
+
+      // Publish the message
+      kf_pub_.publish(kf_msg);      
 
       // Create a new KF
       prev_kf_ = odom_;
@@ -290,6 +309,9 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
 
       // Updating the keyframe stamp
       kf_stamp_ = header.stamp.toSec();
+
+      // Cleaning up the relative poses
+      kf_rel_poses_.clear();
     }
   }
 }

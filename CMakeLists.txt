@@ -45,8 +45,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   eigen_conversions
   pcl_conversions
-  tf_conversions
-  message_filters
+  tf_conversions  
   message_generation
   image_transport
   cv_bridge
@@ -69,18 +68,20 @@ message(STATUS "Compiler flags: ${CMAKE_CXX_FLAGS}")
 add_message_files(
   FILES
   LoopClosure.msg
+  KeyframeMessage.msg
 )
 
 generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
+  sensor_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES
-  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs visualization_msgs tf eigen_conversions pcl_conversions tf_conversions message_filters message_runtime image_transport cv_bridge
+  CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs nav_msgs sensor_msgs visualization_msgs tf eigen_conversions pcl_conversions tf_conversions message_runtime image_transport cv_bridge
   DEPENDS EIGEN3 PCL CERES G2O
 )
 

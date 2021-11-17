@@ -53,6 +53,7 @@
 // Liodom
 #include <lihash_slam/defs.h>
 #include <lihash_slam/factors.hpp>
+#include <lihash_slam/KeyframeMessage.h>
 
 namespace lihash_slam {
 
@@ -86,8 +87,7 @@ class LidarOdometer {
   ros::NodeHandle nh_;
   ros::Publisher odom_pub_;
   ros::Publisher twist_pub_;
-  ros::Publisher kf_pc_pub_;
-  ros::Publisher kf_pose_pub_;
+  ros::Publisher kf_pub_;
   tf::TransformBroadcaster tf_broadcaster_;
 
   // Variables
@@ -102,6 +102,7 @@ class LidarOdometer {
   Eigen::Isometry3d laser_to_base_;
   PointCloud::Ptr kf_points_;
   LocalMapManager lmap_;
+  std::vector<Eigen::Isometry3d> kf_rel_poses_;
 
   // Params
   double min_range_;
