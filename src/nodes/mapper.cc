@@ -52,6 +52,7 @@ bool lc_added;
 ros::Publisher map_points_pub;
 ros::Publisher map_kfs_pub;
 ros::Publisher map_cells_pub;
+ros::Publisher map_traj_pub;
 
 void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   
@@ -260,6 +261,55 @@ void publishData(const ros::TimerEvent& event) {
 
     map_kfs_pub.publish(markers);
   }
+
+  // Publishing the corrected trajectory
+  if (map_traj_pub.getNumSubscribers()) {
+    visualization_msgs::Marker marker_traj;
+    marker_traj.header.frame_id = "world";
+    marker_traj.header.stamp = time;
+    marker_traj.ns = "traj";
+    marker_traj.id = 0;
+    marker_traj.type = visualization_msgs::Marker::LINE_STRIP;
+    marker_traj.action = visualization_msgs::Marker::ADD;
+    marker_traj.scale.x = 0.25;
+    marker_traj.color.a = 0.5;    
+    marker_traj.color.r = 1.0;
+    marker_traj.color.g = 1.0;
+    marker_traj.pose.orientation.w = 1.0;
+
+    std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();    
+    for (size_t i = 0; i < kfs->size(); i++) {
+      // Getting the KF pose
+      Eigen::Isometry3d pose = kfs->at(i)->pose;
+
+      // Adding the pose to the list
+      geometry_msgs::Point kf_p;
+      kf_p.x = pose.translation().x();
+      kf_p.y = pose.translation().y();
+      kf_p.z = pose.translation().z();
+      marker_traj.points.push_back(kf_p);
+      marker_traj.colors.push_back(marker_traj.color);
+
+      // Iterating through each frame
+      for (size_t j = 0; j < kfs->at(i)->frame_poses.size(); j++) {
+        // Get the frame pose
+        Eigen::Isometry3d frame_pose = kfs->at(i)->frame_poses[j];
+
+        // Transform the frame pose
+        Eigen::Isometry3d corr_pose = pose * frame_pose;
+
+        // Adding the pose to the list
+        geometry_msgs::Point kf_p;
+        kf_p.x = corr_pose.translation().x();
+        kf_p.y = corr_pose.translation().y();
+        kf_p.z = corr_pose.translation().z();
+        marker_traj.points.push_back(kf_p);
+        marker_traj.colors.push_back(marker_traj.color);
+      }
+    }
+
+    map_traj_pub.publish(marker_traj);
+  }
 }
 
 int main(int argc, char** argv) {
@@ -283,6 +333,7 @@ int main(int argc, char** argv) {
   map_points_pub = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);
   map_kfs_pub    = nh.advertise<visualization_msgs::MarkerArray>("map/keyframes", 120, true);
   map_cells_pub  = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
+  map_traj_pub   = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
 
   // Timers
   ros::Timer mapper_timer    = nh.createTimer(ros::Duration(2.0), mapping);

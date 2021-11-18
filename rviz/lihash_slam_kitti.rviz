@@ -25,7 +25,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: Edges
+    SyncSource: Map - Points
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -225,7 +225,7 @@ Visualization Manager:
       Marker Topic: /lihash_slam/mapper/map/cells
       Name: Map - Cells
       Namespaces:
-        cells: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -233,7 +233,15 @@ Visualization Manager:
       Marker Topic: /lihash_slam/mapper/map/keyframes
       Name: Map - Keyframes
       Namespaces:
-        kfs: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /lihash_slam/mapper/map/trajectory
+      Name: Map - Traj
+      Namespaces:
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
