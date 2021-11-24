@@ -312,6 +312,54 @@ void publishData(const ros::TimerEvent& event) {
   }
 }
 
+void writeResults() {
+
+  // Getting corrected poses
+  std::vector<Eigen::Matrix4d> poses;
+  std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
+  for (size_t i = 0; i < kfs->size(); i++) {
+    // Getting the KF pose
+    Eigen::Isometry3d pose_iso = kfs->at(i)->pose;
+    Eigen::Matrix4d pose = kfs->at(i)->pose.matrix();
+    poses.push_back(pose);
+
+    // Iterating through each frame
+    for (size_t j = 0; j < kfs->at(i)->frame_poses.size(); j++) {
+      // Get the frame pose
+      Eigen::Isometry3d frame_pose = kfs->at(i)->frame_poses[j];
+
+      // Transform the frame pose
+      Eigen::Isometry3d corr_pose = pose_iso * frame_pose;
+
+      // Adding the pose to the list
+      poses.push_back(corr_pose.matrix());
+    }
+  }
+
+  // Writing poses
+  std::string poses_filename = "/home/emilio/Escritorio/poses.txt";
+  std::ofstream poses_file;
+  poses_file.open(poses_filename.c_str(), std::ios::out | std::ios::trunc);
+
+  for (size_t pose_ind = 0; pose_ind < poses.size(); pose_ind++) {
+    for (int i = 0; i < 3; i++) { // Rows
+      for (int j = 0; j < 4; j++) { // Cols
+        poses_file << poses[pose_ind](i, j);
+
+        if (j != 3) {
+          poses_file << " ";
+        }
+      }
+
+      if (i == 2) {
+        poses_file << std::endl;
+      } else {
+        poses_file << " ";
+      }
+    }
+  }  
+}
+
 int main(int argc, char** argv) {
   
   // Initializing node
@@ -344,6 +392,11 @@ int main(int argc, char** argv) {
 
   // Last mapping procedure
   mapping(ros::TimerEvent());
+
+  // Writing results to a file
+  ROS_INFO("Writing results ...");
+  writeResults();
+  ROS_INFO("Done!");
 
   return 0;
 }
