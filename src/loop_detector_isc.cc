@@ -78,35 +78,28 @@ bool LoopDetectorISC::detect(Loop& loop) {
     isc_pub_.publish(out_msg.toImageMsg());
   }
 
-  if (gen_.matched_frame_id.size() > 0) {
+  if (gen_.matched_frame_id.size() > 0) {    
     // Validating candidates
-    // Initializing Normal Distributions Transform (NDT)
-    pcl::NormalDistributionsTransform<Point, Point> ndt;
-    // Setting scale dependent NDT parameters
-    // Setting minimum transformation difference for termination condition
-    ndt.setTransformationEpsilon(0.01);
-    // Setting maximum step size for More-Thuente line search
-    ndt.setStepSize(0.1);
-    //Setting Resolution of NDT grid structure (VoxelGridCovariance)
-    ndt.setResolution(1.0);
-    // Setting max number of registration iterations.
-    ndt.setMaximumIterations(50);
-
-    // Setting point cloud to be aligned
-    ndt.setInputSource(cur_frame->points);
-    // Setting point cloud to be aligned to
-    ndt.setInputTarget(frames[gen_.matched_frame_id[0]].points);
+    pcl::GeneralizedIterativeClosestPoint<Point, Point> gicp;
+    gicp.setTransformationEpsilon(0.1);
+    gicp.setMaximumIterations(64);  
+    gicp.setMaxCorrespondenceDistance(2.0);
+    gicp.setCorrespondenceRandomness(20);
+    gicp.setMaximumOptimizerIterations(20);
 
     // Computing the initial guess
     Eigen::Isometry3d init_guess = frames[gen_.matched_frame_id[0]].pose.inverse() * cur_frame->pose;
 
     // Calculating required rigid transform to align the input cloud to the target cloud
     PointCloud::Ptr aligned(new PointCloud);
-    ndt.align(*aligned, init_guess.matrix().cast<float>());
+    gicp.align(*aligned, init_guess.matrix().cast<float>());
+    double score = gicp.getFitnessScore();
 
-    if (ndt.hasConverged()) {
+    ROS_INFO("Score: %f", score);
+
+    if (gicp.hasConverged() && score < 4.0) {
       Eigen::Isometry3d rel_pose;
-      rel_pose = ndt.getFinalTransformation().cast<double>();
+      rel_pose = gicp.getFinalTransformation().cast<double>();
       // Filling data on loop struct
       loop.frame1 = gen_.matched_frame_id[0];
       loop.frame2 = cur_frame->id;      

@@ -23,7 +23,7 @@
 #include <lihash_slam/loop_detector_base.hpp>
 
 // PCL
-#include <pcl/registration/ndt.h>
+#include <pcl/registration/gicp.h>
 
 namespace lihash_slam {
 

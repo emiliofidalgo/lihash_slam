@@ -93,46 +93,50 @@ bool LoopDetectorPose::detect(Loop& loop) {
   }
 
   ROS_INFO("--- Loop Detection ---");
-  ROS_INFO("Number of candidates: %d", (int)candidates.size());
+  ROS_INFO("Number of candidates: %d", (int)candidates.size());  
 
-  // Validating candidates
-  // Initializing Normal Distributions Transform (NDT)
-  pcl::NormalDistributionsTransform<Point, Point> ndt;
-  // Setting scale dependent NDT parameters
-  // Setting minimum transformation difference for termination condition
-  ndt.setTransformationEpsilon(0.01);
-  // Setting maximum step size for More-Thuente line search
-  ndt.setStepSize(0.1);
-  //Setting Resolution of NDT grid structure (VoxelGridCovariance)
-  ndt.setResolution(1.0);
-  // Setting max number of registration iterations.
-  ndt.setMaximumIterations(50);
-  
-  double best_score = std::numeric_limits<double>::max();
-  LoopFrame* best_candidate = 0;
-  Eigen::Isometry3d rel_pose;
+  std::vector<double> scores(candidates.size(), std::numeric_limits<double>::max());
+  std::vector<Eigen::Isometry3d> rel_poses(candidates.size(), Eigen::Isometry3d::Identity());
 
+  #pragma omp parallel for
   for (unsigned i = 0; i < candidates.size(); i++) {
+
+    // Validating candidates
+    pcl::GeneralizedIterativeClosestPoint<Point, Point> gicp;
+    gicp.setTransformationEpsilon(0.1);
+    gicp.setMaximumIterations(64);  
+    gicp.setMaxCorrespondenceDistance(2.0);
+    gicp.setCorrespondenceRandomness(20);
+    gicp.setMaximumOptimizerIterations(20);
     // Setting point cloud to be aligned
-    ndt.setInputSource(cur_frame->points);
+    gicp.setInputSource(cur_frame->points);
     // Setting point cloud to be aligned to
-    ndt.setInputTarget(candidates[i]->points);
+    gicp.setInputTarget(candidates[i]->points);
 
     // Computing the initial guess
     Eigen::Isometry3d init_guess = candidates[i]->pose.inverse() * cur_frame->pose;
 
     // Calculating required rigid transform to align the input cloud to the target cloud
     PointCloud::Ptr aligned(new PointCloud);
-    ndt.align(*aligned, init_guess.matrix().cast<float>());
+    gicp.align(*aligned, init_guess.matrix().cast<float>());
 
-    double score = ndt.getFitnessScore();
-    if (!ndt.hasConverged() || score > best_score) {
-      continue;
+    double score = gicp.getFitnessScore();
+    ROS_INFO("Cand %i: %f", int(i), score);
+    if (gicp.hasConverged()) {
+      scores[i] = score;
+      rel_poses[i] = gicp.getFinalTransformation().cast<double>();
     }
+  }
 
-    best_score = score;
-    best_candidate = candidates[i];
-    rel_pose = ndt.getFinalTransformation().cast<double>();
+  double best_score = std::numeric_limits<double>::max();
+  LoopFrame* best_candidate = 0;
+  Eigen::Isometry3d rel_pose;
+  for (unsigned i = 0; i < candidates.size(); i++) {
+    if (scores[i] < best_score) {
+      best_score = scores[i];
+      best_candidate = candidates[i];
+      rel_pose = rel_poses[i];
+    }
   }
 
   // Checking the final candidate

@@ -24,7 +24,7 @@
 #include <iscGenerationClass.h>
 
 // PCL
-#include <pcl/registration/ndt.h>
+#include <pcl/registration/gicp.h>
 
 // ROS
 #include <sensor_msgs/Image.h>
