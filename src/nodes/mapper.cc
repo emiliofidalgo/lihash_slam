@@ -54,124 +54,48 @@ ros::Publisher map_kfs_pub;
 ros::Publisher map_cells_pub;
 ros::Publisher map_traj_pub;
 
-void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
-  
-  // Converting ROS message to PCL
-  lihash_slam::PointCloud::Ptr pc_new(new lihash_slam::PointCloud);
-  pcl::fromROSMsg(kf_msg->points, *pc_new);
-
-  // Creating an isometry
-  Eigen::Quaterniond q_current(kf_msg->pose.orientation.w,
-                               kf_msg->pose.orientation.x,
-                               kf_msg->pose.orientation.y,
-                               kf_msg->pose.orientation.z);
-  Eigen::Vector3d t_current(kf_msg->pose.position.x,
-                            kf_msg->pose.position.y,
-                            kf_msg->pose.position.z);
-
-  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
-  pose.linear() = q_current.toRotationMatrix();
-  pose.translation() = t_current;
-
-  lihash_slam::Keyframe* kf = new lihash_slam::Keyframe(
-                                kf_msg->header.seq,
-                                pose,
-                                pc_new);
-  kf->addFramePoses(kf_msg->rel_poses);
-  queue_kfs.push_back(kf);
-}
-
-void lcClb(const lihash_slam::LoopClosureConstPtr& lc_msg) {
-  queue_lcs.push_back(*lc_msg);
-}
-
-void mapping(const ros::TimerEvent& event) {  
-  
-  // Processing new keyframes
-  int kf_processed = 0;
-  for (size_t i = 0; i < queue_kfs.size(); i++) {
-
-    lihash_slam::Keyframe* kf = queue_kfs[i];    
-    map->addKeyframe(kf);
-    kf_processed++;
-  }  
-  queue_kfs.erase(queue_kfs.begin(), queue_kfs.end());
-
-  // Checking if at least one KF has been added
-  if (!kf_processed) return;
+int processLoopClosures() {
 
   // Processing Loop Closures
   int lc_processed = 0;
+  std::deque<lihash_slam::LoopClosure> new_queue_lcs;
+
   for (size_t i = 0; i < queue_lcs.size(); i++) {
     
     lihash_slam::LoopClosure lc = queue_lcs[i];
 
-    // Creating an isometry
-    Eigen::Quaterniond q_current(lc.rel_pose.orientation.w,
-                                 lc.rel_pose.orientation.x,
-                                 lc.rel_pose.orientation.y,
-                                 lc.rel_pose.orientation.z);
-    Eigen::Vector3d t_current(lc.rel_pose.position.x,
-                              lc.rel_pose.position.y,
-                              lc.rel_pose.position.z);
-    Eigen::Isometry3d rel_pose = Eigen::Isometry3d::Identity();
-    rel_pose.linear() = q_current.toRotationMatrix();
-    rel_pose.translation() = t_current;
+    if (map->existsKeyframe(lc.f1) && map->existsKeyframe(lc.f2)) {
 
-    map->addLoopClosure(lc.f1, lc.f2, rel_pose);
+      // Creating an isometry
+      Eigen::Quaterniond q_current(lc.rel_pose.orientation.w,
+                                  lc.rel_pose.orientation.x,
+                                  lc.rel_pose.orientation.y,
+                                  lc.rel_pose.orientation.z);
+      Eigen::Vector3d t_current(lc.rel_pose.position.x,
+                                lc.rel_pose.position.y,
+                                lc.rel_pose.position.z);
+      Eigen::Isometry3d rel_pose = Eigen::Isometry3d::Identity();
+      rel_pose.linear() = q_current.toRotationMatrix();
+      rel_pose.translation() = t_current;
 
-    lc_processed++;
+      map->addLoopClosure(lc.f1, lc.f2, rel_pose);
+
+      lc_processed++;      
+    } else {
+      new_queue_lcs.push_back(lc);
+    }
   }
-  queue_lcs.erase(queue_lcs.begin(), queue_lcs.end());
 
-  map->optimize();
+  queue_lcs.erase(queue_lcs.begin(), queue_lcs.end());
+  queue_lcs = new_queue_lcs;
+
+  return lc_processed;
 }
 
-void publishData(const ros::TimerEvent& event) {
+void publishKeyframes() {
 
-  ros::Time time = ros::Time::now();
+  ros::Time time = ros::Time::now();  
   
-  // Publishing the current map
-  if (map_points_pub.getNumSubscribers() > 0) {
-    lihash_slam::PointCloud::Ptr m = map->getMapPoints();
-    sensor_msgs::PointCloud2 cloud_msg;
-    pcl::toROSMsg(*m, cloud_msg);
-    cloud_msg.header.frame_id = "world";
-    cloud_msg.header.stamp = time;
-    map_points_pub.publish(cloud_msg);
-  }
-
-  // Publishing cells
-  if (map_cells_pub.getNumSubscribers() > 0) {
-    // Creating the template msg
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "world";
-    marker.header.stamp = time;
-    marker.ns = "cells";
-    marker.id = 0;
-    marker.type = visualization_msgs::Marker::CUBE_LIST;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = 20.0;
-    marker.scale.y = 20.0;
-    marker.scale.z = 25.0;
-    marker.color.a = 0.05;
-    marker.color.g = 1.0;
-    marker.pose.orientation.w = 1.0;
-
-    std::vector<lihash_slam::Cell*>* cells = map->getCells();
-    marker.points.resize(cells->size());
-    for (size_t i = 0; i < cells->size(); i++) {
-      Eigen::Vector3d pose = cells->at(i)->getPose();
-      marker.points[i].x = pose.x();
-      marker.points[i].y = pose.y();
-      marker.points[i].z = pose.z();
-      marker.colors.push_back(marker.color);
-    }
-
-    // Publish the marker of cells
-    map_cells_pub.publish(marker);
-  }
-
   // Publishing keyframes
   if (map_kfs_pub.getNumSubscribers() > 0) {
     // Keyframes
@@ -261,6 +185,52 @@ void publishData(const ros::TimerEvent& event) {
 
     map_kfs_pub.publish(markers);
   }
+}
+
+void publishMap(const ros::TimerEvent& event) {
+
+  ros::Time time = ros::Time::now();
+  
+  // Publishing the current map
+  if (map_points_pub.getNumSubscribers() > 0) {
+    lihash_slam::PointCloud::Ptr m = map->getMapPoints();
+    sensor_msgs::PointCloud2 cloud_msg;
+    pcl::toROSMsg(*m, cloud_msg);
+    cloud_msg.header.frame_id = "world";
+    cloud_msg.header.stamp = time;
+    map_points_pub.publish(cloud_msg);
+  }
+
+  // Publishing cells
+  if (map_cells_pub.getNumSubscribers() > 0) {
+    // Creating the template msg
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "world";
+    marker.header.stamp = time;
+    marker.ns = "cells";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::CUBE_LIST;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.scale.x = 20.0;
+    marker.scale.y = 20.0;
+    marker.scale.z = 25.0;
+    marker.color.a = 0.05;
+    marker.color.g = 1.0;
+    marker.pose.orientation.w = 1.0;
+
+    std::vector<lihash_slam::Cell*>* cells = map->getCells();
+    marker.points.resize(cells->size());
+    for (size_t i = 0; i < cells->size(); i++) {
+      Eigen::Vector3d pose = cells->at(i)->getPose();
+      marker.points[i].x = pose.x();
+      marker.points[i].y = pose.y();
+      marker.points[i].z = pose.z();
+      marker.colors.push_back(marker.color);
+    }
+
+    // Publish the marker of cells
+    map_cells_pub.publish(marker);
+  }  
 
   // Publishing the corrected trajectory
   if (map_traj_pub.getNumSubscribers()) {
@@ -360,6 +330,47 @@ void writeResults() {
   }  
 }
 
+void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
+  
+  // Converting ROS message to PCL
+  lihash_slam::PointCloud::Ptr pc_new(new lihash_slam::PointCloud);
+  pcl::fromROSMsg(kf_msg->points, *pc_new);
+
+  // Creating an isometry
+  Eigen::Quaterniond q_current(kf_msg->pose.orientation.w,
+                               kf_msg->pose.orientation.x,
+                               kf_msg->pose.orientation.y,
+                               kf_msg->pose.orientation.z);
+  Eigen::Vector3d t_current(kf_msg->pose.position.x,
+                            kf_msg->pose.position.y,
+                            kf_msg->pose.position.z);
+
+  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
+  pose.linear() = q_current.toRotationMatrix();
+  pose.translation() = t_current;
+
+  lihash_slam::Keyframe* kf = new lihash_slam::Keyframe(
+                                kf_msg->header.seq,
+                                pose,
+                                pc_new);
+  kf->addFramePoses(kf_msg->rel_poses);
+  
+  map->addKeyframe(kf);
+
+  publishKeyframes();
+}
+
+void lcClb(const lihash_slam::LoopClosureConstPtr& lc_msg) {
+  
+  queue_lcs.push_back(*lc_msg);
+
+  int nloops = processLoopClosures();
+
+  if (nloops > 0) {
+    map->optimize();    
+  }
+}
+
 int main(int argc, char** argv) {
   
   // Initializing node
@@ -384,14 +395,14 @@ int main(int argc, char** argv) {
   map_traj_pub   = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
 
   // Timers
-  ros::Timer mapper_timer    = nh.createTimer(ros::Duration(2.0), mapping);
-  ros::Timer pub_timer       = nh.createTimer(ros::Duration(5.0), publishData);
+  //ros::Timer mapper_timer    = nh.createTimer(ros::Duration(2.0), mapping);
+  ros::Timer pub_timer       = nh.createTimer(ros::Duration(4.0), publishMap);
 
   // Receiving messages
   ros::spin();
 
   // Last mapping procedure
-  mapping(ros::TimerEvent());
+  map->optimize();
 
   // Writing results to a file
   ROS_INFO("Writing results ...");
