@@ -116,7 +116,7 @@
   </node>
 
   <group if="$(arg viz)">
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find lihash_slam)/rviz/lihash_slam_kitti.rviz" />
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find lihash_slam)/rviz/lihash_slam_ouster.rviz" />
   </group>
 
 </launch>
