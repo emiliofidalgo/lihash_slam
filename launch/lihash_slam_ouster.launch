@@ -4,30 +4,30 @@
   <arg name="viz" default="false" />
 
   <!-- Preprocessor -->
-  <arg name="min_range" default="3.0" />
+  <arg name="min_range" default="0.8" />
   <arg name="max_range" default="75.0" />
-  <arg name="lidar_type" default="0" />
+  <arg name="lidar_type" default="1" />
   <arg name="scan_lines" default="64" />
-  <arg name="scan_regions" default="8" />
-  <arg name="edges_per_region" default="10" />
+  <arg name="scan_regions" default="6" />
+  <arg name="edges_per_region" default="5" />
 
   <!-- Odometer -->
   <arg name="fixed_frame" default="odom" />
   <arg name="base_frame" default="base_link" />
   <arg name="lidar_frame" default="laser" />
   <arg name="publish_tf" default="true" />
-  <arg name="kf_dist" default="15.0" />
+  <arg name="kf_dist" default="25.0" />
   <arg name="kf_rot" default="2.0" />
-  <arg name="kf_frames" default="10" />
-  <arg name="lmap_frames" default="15" />
+  <arg name="kf_frames" default="40" />
+  <arg name="lmap_frames" default="5" />
   
   <!-- Loop Detector -->
   <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC -->
   
   <!-- LCD Pose -->
-  <arg name="dist_th" default="25.0" />         <!-- 06: 10.0 -->
-  <arg name="accum_dist_th" default="50.0" />   <!-- 06: 80.0 -->
-  <arg name="score_th" default="4.0" />         <!-- 06: 2.5  -->
+  <arg name="dist_th" default="20.0" />
+  <arg name="accum_dist_th" default="85.0" />
+  <arg name="score_th" default="4.0" />
 
   <!-- LCD ISC -->
   <arg name="rings" default="60" />
@@ -51,7 +51,7 @@
       <param name="scan_regions" value="$(arg scan_regions)" />
       <param name="edges_per_region" value="$(arg edges_per_region)" />
       
-      <remap from="~points" to="/kitti/velo/pointcloud" />
+      <remap from="~points" to="/os_cloud/points" />
     </node>
 
     <!-- Odometer -->

@@ -53,9 +53,17 @@ void LoopDetectorISC::init() {
 
 // Adding a new possible frame
 void LoopDetectorISC::addFrame(const int id, const Eigen::Isometry3d& pose, const PointCloud::Ptr& points) {
+
+  // Computing the absolute pose of the frame
+  Eigen::Isometry3d abs_pose;
+  if (frames.size() > 0) {
+    abs_pose = frames[frames.size() - 1].pose * pose;
+  } else {
+    abs_pose = Eigen::Isometry3d::Identity();
+  }
   
   int curr_id = id;
-  LoopFrame frame(curr_id, pose, points);
+  LoopFrame frame(curr_id, abs_pose, points);
   frames.push_back(frame);
 }
 

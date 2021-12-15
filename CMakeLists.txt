@@ -129,6 +129,7 @@ target_link_libraries(loop_detector
 add_executable(mapper    
     src/cell.cc
     src/keyframe.cc
+    src/information_matrix.cpp
     src/map.cc
     src/nodes/mapper.cc)
 target_link_libraries(mapper

@@ -32,6 +32,7 @@
 
 // LiHash-SLAM
 #include <lihash_slam/cell.h>
+#include <lihash_slam/information_matrix.h>
 #include <lihash_slam/keyframe.h>
 
 namespace lihash_slam {
@@ -49,6 +50,7 @@ class Map {
   PointCloud::Ptr getLocalMapPoints(const Eigen::Isometry3d& pose, int cells_xy = 2, int cells_z = 1);
   std::vector<Cell*>* getCells();
   std::vector<Keyframe*>* getKeyframes();
+  unsigned existsKeyframe(int kf_id);
  private:
   double voxel_xysize_; // Assume the same size in X and Y dimensions
   double inv_voxel_xysize_;
@@ -71,6 +73,9 @@ class Map {
 
   // Graph
   g2o::SparseOptimizer optimizer_;
+
+  // Information matrix calculator
+  InformationMatrixCalculator infcalc_;
 };
 
 }  // namespace lihash_slam

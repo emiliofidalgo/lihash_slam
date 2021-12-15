@@ -74,6 +74,7 @@ LidarOdometer::LidarOdometer(const ros::NodeHandle& nh) :
   prev_odom_(Eigen::Isometry3d::Identity()),
   odom_(Eigen::Isometry3d::Identity()),
   prev_kf_(Eigen::Isometry3d::Identity()),
+  last_kf_(Eigen::Isometry3d::Identity()),
   prev_stamp_(0.0),
   kf_stamp_(0.0),
   kf_points_(new PointCloud),
@@ -241,10 +242,12 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
       kf_rel_poses_.push_back(Tkl);
       
     } else {
-
+      //Estimating the relative pose of the current keyframe
+      Eigen::Isometry3d rel_pose = last_kf_.inverse() * prev_kf_;
+      
       // Publishing keyframe
-      Eigen::Quaterniond q_current(prev_kf_.rotation());
-      Eigen::Vector3d t_current = prev_kf_.translation();
+      Eigen::Quaterniond q_current(rel_pose.rotation());
+      Eigen::Vector3d t_current = rel_pose.translation();
 
       // Creating the base message
       lihash_slam::KeyframeMessage kf_msg;
@@ -260,10 +263,12 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
       kf_msg.pose.position.y = t_current.y();
       kf_msg.pose.position.z = t_current.z();   
 
-      // Publishing the transform between odom and keyframe
+      // Publishing the transform between odom and keyframe      
+      Eigen::Quaterniond q_current_world(prev_kf_.rotation());
+      Eigen::Vector3d t_current_world = prev_kf_.translation();
       tf::Transform transform;
-      transform.setOrigin(tf::Vector3(t_current.x(), t_current.y(), t_current.z()));
-      tf::Quaternion q(q_current.x(), q_current.y(), q_current.z(), q_current.w());
+      transform.setOrigin(tf::Vector3(t_current_world.x(), t_current_world.y(), t_current_world.z()));
+      tf::Quaternion q(q_current_world.x(), q_current_world.y(), q_current_world.z(), q_current_world.w());
       transform.setRotation(q);
       ros::Time kf_time;
       kf_time.fromSec(kf_stamp_);
@@ -298,6 +303,7 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
       kf_pub_.publish(kf_msg);      
 
       // Create a new KF
+      last_kf_ = prev_kf_;
       prev_kf_ = odom_;
       
       // Cleaning up the local map

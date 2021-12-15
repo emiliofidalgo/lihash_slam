@@ -50,15 +50,24 @@ void LoopDetectorPose::init() {
 void LoopDetectorPose::addFrame(const int id, const Eigen::Isometry3d& pose, const PointCloud::Ptr& points) {
   
   int curr_id = id;
-  LoopFrame frame(curr_id, pose, points);
+
+  // Computing the absolute pose of the frame
+  Eigen::Isometry3d abs_pose;
+  if (frames.size() > 0) {
+    abs_pose = frames[frames.size() - 1].pose * pose;
+  } else {
+    abs_pose = Eigen::Isometry3d::Identity();
+  }
+
+  LoopFrame frame(curr_id, abs_pose, points);
   frames.push_back(frame);
 
   if (curr_id == 0) { // If this is the first frame
     acc_dists.push_back(0.0);
   } else {
     // Compute the distance between this frame and the previous one
-    Eigen::Isometry3d T12 = frames[curr_id - 1].pose.inverse() * pose;
-    double d_trans = T12.translation().norm();
+    //Eigen::Isometry3d T12 = frames[curr_id - 1].pose.inverse() * pose;    
+    double d_trans = pose.translation().norm();
 
     // Track the accumulated distance on each frame
     acc_dists.push_back(acc_dists[curr_id - 1] + d_trans);

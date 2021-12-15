@@ -95,6 +95,7 @@ class LidarOdometer {
   Eigen::Isometry3d prev_odom_;
   Eigen::Isometry3d odom_;
   Eigen::Isometry3d prev_kf_;
+  Eigen::Isometry3d last_kf_;
   double prev_stamp_;
   double kf_stamp_;
   double param_q[4] = {0, 0, 0, 1};

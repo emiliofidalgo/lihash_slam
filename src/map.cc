@@ -19,6 +19,8 @@
 
 #include <lihash_slam/map.h>
 
+#include <random>
+
 G2O_USE_OPTIMIZATION_LIBRARY(cholmod)
 G2O_USE_OPTIMIZATION_LIBRARY(csparse)
 
@@ -64,6 +66,11 @@ Map::~Map() {
 }
 
 void Map::addKeyframe(lihash_slam::Keyframe* kf) {
+
+  // Computing the global pose of the Keyframe
+  if (keyframes_.size() > 0) {
+    kf->pose = keyframes_[keyframes_.size() - 1]->pose * kf->pose;
+  }  
   
   // Adding the keyframe to the map
   keyframes_.push_back(kf);  
@@ -82,15 +89,13 @@ void Map::addKeyframe(lihash_slam::Keyframe* kf) {
   } else {
     v->setFixed(false);
 
-    // Computing edge covariance
-    // TODO: Perform a better covariance estimation at this point
-    Eigen::MatrixXd im = Eigen::MatrixXd::Identity(6, 6);
-    im.topLeftCorner(3, 3).array() /= 0.5;
-    im.bottomRightCorner(3, 3).array() /= 0.1;
-
     // Adding an edge with the previous node
     lihash_slam::Keyframe* prev_kf = keyframes_[keyframes_.size() - 2];
     Eigen::Isometry3d rel_pose = prev_kf->pose.inverse() * kf->pose;
+
+    // Compute information matrix
+    Eigen::MatrixXd im = infcalc_.calcInfMatrix(prev_kf->points, kf->points, rel_pose);
+
     g2o::EdgeSE3* e(new g2o::EdgeSE3());
     e->setMeasurement(rel_pose);
     e->setInformation(im);
@@ -106,13 +111,11 @@ void Map::addKeyframe(lihash_slam::Keyframe* kf) {
 void Map::addLoopClosure(const int f1, const int f2, const Eigen::Isometry3d& rel_pose) {
 
   // Computing edge covariance
-  // TODO: Perform a better covariance estimation at this point
-  Eigen::MatrixXd im = Eigen::MatrixXd::Identity(6, 6);
-  im.topLeftCorner(3, 3).array() /= 0.5;
-  im.bottomRightCorner(3, 3).array() /= 0.1;
+  Eigen::MatrixXd im = infcalc_.calcInfMatrix(keyframes_[f1]->points, keyframes_[f2]->points, rel_pose);
 
   g2o::EdgeSE3* e(new g2o::EdgeSE3());
   e->setMeasurement(rel_pose);
+  //e->setMeasurement(t);
   e->setInformation(im);
   e->vertices()[0] = keyframes_[f1]->node;
   e->vertices()[1] = keyframes_[f2]->node;
@@ -131,11 +134,11 @@ void Map::optimize(const int iters) {
   if (optimizer_.vertices().size() > 2) {
     optimizer_.initializeOptimization();
     optimizer_.optimize(iters);
-  }
+  }  
 
   // Update the pose on every keyframe
   for (size_t i = 0; i < keyframes_.size(); i++) {
-    keyframes_[i]->pose = keyframes_[i]->node->estimate();
+    keyframes_[i]->pose = keyframes_[i]->node->estimate();    
   }
 
   // Generate the new optimized map
@@ -268,5 +271,8 @@ std::vector<Keyframe*>* Map::getKeyframes() {
   return &keyframes_;
 }
 
+unsigned Map::existsKeyframe(int kf_id) {
+  return ((unsigned)kf_id < keyframes_.size());
+}
 
 }  // namespace lihash_slam
