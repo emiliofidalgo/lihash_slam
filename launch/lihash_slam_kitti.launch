@@ -22,7 +22,7 @@
   <arg name="lmap_frames" default="15" />
   
   <!-- Loop Detector -->
-  <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC -->
+  <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC, 2: SC -->
   
   <!-- LCD Pose -->
   <arg name="dist_th" default="25.0" />         <!-- 06: 10.0 -->
