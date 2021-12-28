@@ -45,7 +45,7 @@
 
 //define threshold for loop closure detection
 #define GEOMETRY_THRESHOLD 0.67
-#define INTENSITY_THRESHOLD 0.91
+#define INTENSITY_THRESHOLD 0.91       // Ouster: 0.82, Velodyne: 0.91
 
 typedef cv::Mat ISCDescriptor; 
 

@@ -129,6 +129,7 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
         if(delta_travel_distance > SKIP_NEIBOUR_DISTANCE && pos_distance<delta_travel_distance*INFLATION_COVARIANCE){
             double geo_score=0;
             double inten_score =0;
+
             if(is_loop_pair(desc,isc_arr[i],geo_score,inten_score)){
                 if(geo_score+inten_score>best_score){
                     best_score = geo_score+inten_score;
@@ -140,7 +141,7 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
     }
     if(best_matched_id!=0){
         matched_frame_id.push_back(best_matched_id);
-        //ROS_INFO("received loop closure candidate: current: %d, history %d, total_score%f",current_frame_id,best_matched_id,best_score);
+        // ROS_INFO("received loop closure candidate: current: %d, history %d, total_score%f",current_frame_id,best_matched_id,best_score);
     }
 
 
@@ -149,8 +150,10 @@ void ISCGenerationClass::loopDetection(const pcl::PointCloud<pcl::PointXYZI>::Pt
 bool ISCGenerationClass::is_loop_pair(ISCDescriptor& desc1, ISCDescriptor& desc2, double& geo_score, double& inten_score){
     int angle =0;
     geo_score = calculate_geometry_dis(desc1,desc2,angle);
+    // std::cout << "GEOM: " << geo_score << std::endl;
     if(geo_score>GEOMETRY_THRESHOLD){
         inten_score = calculate_intensity_dis(desc1,desc2,angle);
+        // std::cout << "DIST: " << inten_score << std::endl;
         if(inten_score>INTENSITY_THRESHOLD){
             return true;
         }

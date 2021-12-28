@@ -42,6 +42,10 @@ void LoopDetectorISC::readParams(const ros::NodeHandle& nh) {
   nh.param("max_dist", max_dist_, 40.0);
   ROS_INFO("Maximum Distance: %.2f", max_dist_);
 
+  // Best score thresh
+  nh.param("score_th", score_th_, 4.0);
+  ROS_INFO("Best score thresh: %.2f", score_th_);
+
   nh_aux_ = nh;
   isc_pub_ = nh_aux_.advertise<sensor_msgs::Image>("/isc_img", 100);
 }
@@ -94,6 +98,10 @@ bool LoopDetectorISC::detect(Loop& loop) {
     gicp.setMaxCorrespondenceDistance(2.0);
     gicp.setCorrespondenceRandomness(20);
     gicp.setMaximumOptimizerIterations(20);
+    // Setting point cloud to be aligned
+    gicp.setInputSource(cur_frame->points);
+    // Setting point cloud to be aligned to
+    gicp.setInputTarget(frames[gen_.matched_frame_id[0]].points);
 
     // Computing the initial guess
     Eigen::Isometry3d init_guess = frames[gen_.matched_frame_id[0]].pose.inverse() * cur_frame->pose;
@@ -105,7 +113,7 @@ bool LoopDetectorISC::detect(Loop& loop) {
 
     ROS_INFO("Score: %f", score);
 
-    if (gicp.hasConverged() && score < 4.0) {
+    if (gicp.hasConverged() && score < score_th_) {
       Eigen::Isometry3d rel_pose;
       rel_pose = gicp.getFinalTransformation().cast<double>();
       // Filling data on loop struct

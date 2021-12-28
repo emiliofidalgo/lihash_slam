@@ -53,6 +53,7 @@ class LoopDetectorISC : public LoopDetector {
   int rings_;
   int sectors_;
   double max_dist_;
+  double score_th_;
 };
 
 } // namespace lihash_slam
