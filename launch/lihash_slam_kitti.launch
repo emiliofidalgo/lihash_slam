@@ -25,9 +25,9 @@
   <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC, 2: SC -->
   
   <!-- LCD Pose -->
-  <arg name="dist_th" default="25.0" />         <!-- 06: 10.0 -->
-  <arg name="accum_dist_th" default="50.0" />   <!-- 06: 80.0 -->
-  <arg name="score_th" default="4.0" />         <!-- 06: 2.5  -->
+  <arg name="dist_th" default="25.0" />         <!-- 06: 10.0                             -->
+  <arg name="accum_dist_th" default="50.0" />   <!-- 06: 80.0                             -->
+  <arg name="score_th" default="1.0" />         <!-- 06: 2.5 for Pose. 1.0: SC, 4.0: Pose -->
 
   <!-- LCD ISC -->
   <arg name="rings" default="60" />
