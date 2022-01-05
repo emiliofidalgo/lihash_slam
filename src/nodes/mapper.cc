@@ -389,6 +389,10 @@ int main(int argc, char** argv) {
   nh.param("cell_resolution", resolution, 0.4);
   ROS_INFO("Cell Resolution: %.2f", resolution);
 
+  int cell_min_points;
+  nh.param("cell_min_points", cell_min_points, 25);
+  ROS_INFO("Cell Min Points: %i", cell_min_points);
+
   double map_period;
   nh.param("publish_map_period", map_period, 4.0);
   ROS_INFO("Publish Map Period: %.2f", map_period);
@@ -398,7 +402,7 @@ int main(int argc, char** argv) {
   ROS_INFO("Results file: %s", results_file.c_str());
 
   // Initializing the map
-  map = new lihash_slam::Map(cell_xy_size, cell_z_size, resolution);
+  map = new lihash_slam::Map(cell_xy_size, cell_z_size, resolution, cell_min_points);
   lc_added = false;
 
   // ROS Interface

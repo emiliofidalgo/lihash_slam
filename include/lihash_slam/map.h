@@ -40,7 +40,7 @@ namespace lihash_slam {
 // Map
 class Map {
  public:
-  explicit Map(const double xy_size, const double z_size, const double res);
+  explicit Map(const double xy_size, const double z_size, const double res, const int min_points);
   virtual ~Map();
 
   void addKeyframe(lihash_slam::Keyframe* kf);
@@ -59,6 +59,7 @@ class Map {
   double inv_voxel_zsize_;
   double voxel_zsize_half_;
   double resolution_;
+  size_t cell_min_points_;
   pcl::VoxelGrid<Point> vgrid_filter_;
 
   void clearMapPoints();

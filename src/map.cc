@@ -26,14 +26,15 @@ G2O_USE_OPTIMIZATION_LIBRARY(csparse)
 
 namespace lihash_slam {
 
-Map::Map(const double xy_size, const double z_size, const double res) :
+Map::Map(const double xy_size, const double z_size, const double res, const int min_points) :
   voxel_xysize_(xy_size),
   inv_voxel_xysize_(1.0 / xy_size),
   voxel_xysize_half_(xy_size / 2.0),
   voxel_zsize_(z_size),
   inv_voxel_zsize_(1.0 / z_size),
   voxel_zsize_half_(z_size / 2.0),
-  resolution_(res) {
+  resolution_(res),
+  cell_min_points_((size_t)min_points) {
 
     // VoxelGrid filter
 	  vgrid_filter_.setLeafSize(resolution_, resolution_, resolution_);
@@ -196,11 +197,25 @@ void Map::addMapPoints(const PointCloud::Ptr& pc_in, const Eigen::Isometry3d& po
   }
 
   // Update every modified cell
+  std::vector<Cell*> new_cells_vector;  
   for (size_t i = 0; i < cells_vector_.size(); i++) {
     if (cells_vector_[i]->modified()) {
       cells_vector_[i]->filter(vgrid_filter_);
     }
+
+    if (cells_vector_[i]->getPoints()->size() < cell_min_points_) {
+      // Remove the cell
+      HashKey key(cells_vector_[i]->getPose().x(),
+                  cells_vector_[i]->getPose().y(),
+                  cells_vector_[i]->getPose().z());
+      cells_.erase(key);
+    } else {
+      // Cell included in the final set
+      new_cells_vector.push_back(cells_vector_[i]);
+    }
   }
+
+  cells_vector_ = new_cells_vector;
 }
 
 PointCloud::Ptr Map::getMapPoints() {

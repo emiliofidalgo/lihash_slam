@@ -38,6 +38,7 @@
   <arg name="cell_xy_size" default="20.0" />
   <arg name="cell_z_size" default="25.0" />
   <arg name="cell_resolution" default="0.4" />
+  <arg name="cell_min_points" default="50" />
   <arg name="publish_map_period" default="4.0" />
   <arg name="results_file" default="/home/emilio/Escritorio/poses.txt" />
 
@@ -107,6 +108,7 @@
       <param name="cell_xy_size" value="$(arg cell_xy_size)" />
       <param name="cell_z_size" value="$(arg cell_z_size)" />
       <param name="cell_resolution" value="$(arg cell_resolution)" />
+      <param name="cell_min_points" value="$(arg cell_min_points)" />
       <param name="publish_map_period" value="$(arg publish_map_period)" />
       <param name="results_file" value="$(arg results_file)" />    
       
