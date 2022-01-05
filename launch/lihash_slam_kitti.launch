@@ -34,6 +34,13 @@
   <arg name="sectors" default="60" />
   <arg name="max_dist" default="40.0" />
 
+  <!-- Mapper -->
+  <arg name="cell_xy_size" default="20.0" />
+  <arg name="cell_z_size" default="25.0" />
+  <arg name="cell_resolution" default="0.4" />
+  <arg name="publish_map_period" default="4.0" />
+  <arg name="results_file" default="/home/emilio/Escritorio/poses.txt" />
+
   <param name="use_sim_time" value="true"/>
 
   <group ns="lihash_slam">
@@ -95,7 +102,13 @@
     <node pkg="lihash_slam"
           type="mapper"
           name="mapper"
-          output="screen">      
+          output="screen">  
+
+      <param name="cell_xy_size" value="$(arg cell_xy_size)" />
+      <param name="cell_z_size" value="$(arg cell_z_size)" />
+      <param name="cell_resolution" value="$(arg cell_resolution)" />
+      <param name="publish_map_period" value="$(arg publish_map_period)" />
+      <param name="results_file" value="$(arg results_file)" />
       
       <remap from="~kfs"   to="odometer/kfs" />
       <remap from="~lc"    to="loop_detector/lc" />

@@ -282,7 +282,7 @@ void publishMap(const ros::TimerEvent& event) {
   }
 }
 
-void writeResults() {
+void writeResults(const std::string& results_file) {
 
   // Getting corrected poses
   std::vector<Eigen::Matrix4d> poses;
@@ -307,9 +307,8 @@ void writeResults() {
   }
 
   // Writing poses
-  std::string poses_filename = "/home/emilio/Escritorio/poses.txt";
   std::ofstream poses_file;
-  poses_file.open(poses_filename.c_str(), std::ios::out | std::ios::trunc);
+  poses_file.open(results_file.c_str(), std::ios::out | std::ios::trunc);
 
   for (size_t pose_ind = 0; pose_ind < poses.size(); pose_ind++) {
     for (int i = 0; i < 3; i++) { // Rows
@@ -377,8 +376,29 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "mapper");
   ros::NodeHandle nh("~");
 
+  // Getting params  
+  double cell_xy_size;
+  nh.param("cell_xy_size", cell_xy_size, 20.0);
+  ROS_INFO("Cell XY size: %.2f", cell_xy_size);
+
+  double cell_z_size;
+  nh.param("cell_z_size", cell_z_size, 25.0);
+  ROS_INFO("Cell Z size: %.2f", cell_z_size);
+
+  double resolution;
+  nh.param("cell_resolution", resolution, 0.4);
+  ROS_INFO("Cell Resolution: %.2f", resolution);
+
+  double map_period;
+  nh.param("publish_map_period", map_period, 4.0);
+  ROS_INFO("Publish Map Period: %.2f", map_period);
+
+  std::string results_file;
+  nh.param<std::string>("results_file", results_file, "/home/emilio/Escritorio/poses.txt");
+  ROS_INFO("Results file: %s", results_file.c_str());
+
   // Initializing the map
-  map = new lihash_slam::Map(20.0, 25.0, 0.4);
+  map = new lihash_slam::Map(cell_xy_size, cell_z_size, resolution);
   lc_added = false;
 
   // ROS Interface
@@ -394,9 +414,8 @@ int main(int argc, char** argv) {
   map_cells_pub  = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
   map_traj_pub   = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
 
-  // Timers
-  //ros::Timer mapper_timer    = nh.createTimer(ros::Duration(2.0), mapping);
-  ros::Timer pub_timer       = nh.createTimer(ros::Duration(4.0), publishMap);
+  // Timers  
+  ros::Timer pub_timer = nh.createTimer(ros::Duration(map_period), publishMap);
 
   // Receiving messages
   ros::spin();
@@ -405,8 +424,8 @@ int main(int argc, char** argv) {
   map->optimize();
 
   // Writing results to a file
-  ROS_INFO("Writing results ...");
-  writeResults();
+  ROS_INFO("Writing results ...");  
+  writeResults(results_file);
   ROS_INFO("Done!");
 
   return 0;
