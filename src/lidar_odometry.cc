@@ -86,6 +86,7 @@ LidarOdometer::LidarOdometer(const ros::NodeHandle& nh) :
 
     // Publishers
     odom_pub_  = nh_.advertise<nav_msgs::Odometry>("odom", 10);
+    kf2b_pub_  = nh_.advertise<geometry_msgs::PoseStamped>("kf2b", 10);
     twist_pub_ = nh_.advertise<geometry_msgs::TwistStamped>("twist", 10);
     kf_pub_    = nh_.advertise<lihash_slam::KeyframeMessage>("kfs", 50);
 }
@@ -109,7 +110,7 @@ void LidarOdometer::readParams() {
 
   // Base frame
   nh_.param<std::string>("base_frame", base_frame_, "base_link");
-  ROS_INFO("Fixed frame: %s", base_frame_.c_str());
+  ROS_INFO("Base frame: %s", base_frame_.c_str());
 
   // Lidar frame
   nh_.param<std::string>("lidar_frame", lidar_frame_, "");
@@ -213,10 +214,7 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
       Eigen::Quaterniond q_new(param_q[3], param_q[0], param_q[1], param_q[2]);
       odom_.linear() = q_new.toRotationMatrix();
       odom_.translation() = Eigen::Vector3d(param_t[0], param_t[1], param_t[2]);
-    }
-
-    // Publishing the current pose
-    publish(header, odom_);
+    }   
 
     // Compute the position of the detected edges in world coords
     PointCloud::Ptr edges_map(new PointCloud);
@@ -240,6 +238,9 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
 
       // Accumulate the current pose wrt the KF
       kf_rel_poses_.push_back(Tkl);
+
+      // Publishing poses
+      publish(header, odom_);
       
     } else {
       //Estimating the relative pose of the current keyframe
@@ -251,28 +252,42 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
 
       // Creating the base message
       lihash_slam::KeyframeMessage kf_msg;
-      kf_msg.header.frame_id = fixed_frame_;
+      kf_msg.header.frame_id = "prev_keyframe";
       kf_msg.header.stamp.fromSec(kf_stamp_);
 
-      // Filling the pose      
+      // Filling the pose (relative) 
       kf_msg.pose.orientation.x = q_current.x();
       kf_msg.pose.orientation.y = q_current.y();
       kf_msg.pose.orientation.z = q_current.z();
       kf_msg.pose.orientation.w = q_current.w();
       kf_msg.pose.position.x = t_current.x();
       kf_msg.pose.position.y = t_current.y();
-      kf_msg.pose.position.z = t_current.z();   
+      kf_msg.pose.position.z = t_current.z();
 
-      // Publishing the transform between odom and keyframe      
-      Eigen::Quaterniond q_current_world(prev_kf_.rotation());
-      Eigen::Vector3d t_current_world = prev_kf_.translation();
-      tf::Transform transform;
-      transform.setOrigin(tf::Vector3(t_current_world.x(), t_current_world.y(), t_current_world.z()));
-      tf::Quaternion q(q_current_world.x(), q_current_world.y(), q_current_world.z(), q_current_world.w());
-      transform.setRotation(q);
-      ros::Time kf_time;
-      kf_time.fromSec(kf_stamp_);
-      tf_broadcaster_.sendTransform(tf::StampedTransform(transform, kf_time, fixed_frame_, "keyframe"));   
+      Eigen::Quaterniond q_current_op(prev_kf_.rotation());
+      Eigen::Vector3d t_current_op = prev_kf_.translation();
+
+      // Filling the pose (absolute) 
+      kf_msg.odom_pose.orientation.x = q_current_op.x();
+      kf_msg.odom_pose.orientation.y = q_current_op.y();
+      kf_msg.odom_pose.orientation.z = q_current_op.z();
+      kf_msg.odom_pose.orientation.w = q_current_op.w();
+      kf_msg.odom_pose.position.x = t_current_op.x();
+      kf_msg.odom_pose.position.y = t_current_op.y();
+      kf_msg.odom_pose.position.z = t_current_op.z();   
+
+      // Publishing the transform between odom and keyframe   
+      // if (publish_tf_) {   
+      //   Eigen::Quaterniond q_current_world(prev_kf_.rotation());
+      //   Eigen::Vector3d t_current_world = prev_kf_.translation();
+      //   tf::Transform transform;
+      //   transform.setOrigin(tf::Vector3(t_current_world.x(), t_current_world.y(), t_current_world.z()));
+      //   tf::Quaternion q(q_current_world.x(), q_current_world.y(), q_current_world.z(), q_current_world.w());
+      //   transform.setRotation(q);
+      //   ros::Time kf_time;
+      //   kf_time.fromSec(kf_stamp_);
+      //   tf_broadcaster_.sendTransform(tf::StampedTransform(transform, kf_time, fixed_frame_, "keyframe"));   
+      // }
 
       // Filling points
       pcl::VoxelGrid<Point> voxel_filter;
@@ -300,7 +315,10 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
       }
 
       // Publish the message
-      kf_pub_.publish(kf_msg);      
+      kf_pub_.publish(kf_msg);  
+
+      // Publishing poses
+      publish(header, odom_);    
 
       // Create a new KF
       last_kf_ = prev_kf_;
@@ -318,8 +336,8 @@ void LidarOdometer::process(const PointCloud::Ptr& pc_in, const std_msgs::Header
 
       // Cleaning up the relative poses
       kf_rel_poses_.clear();
-    }
-  }
+    }    
+  }  
 }
 
 void LidarOdometer::addEdgeConstraints(const PointCloud::Ptr& edges,
@@ -479,6 +497,25 @@ void LidarOdometer::publish(const std_msgs::Header& header, const Eigen::Isometr
   prev_stamp_ = header.stamp.toSec();
   odom_pub_.publish(laser_odom_msg);
 
+  // Publishing kTb
+  Eigen::Isometry3d kf_2_b = prev_kf_.inverse() * pose;
+
+  Eigen::Quaterniond q_current_kb(kf_2_b.rotation());
+  Eigen::Vector3d t_current_kb = kf_2_b.translation();
+
+  geometry_msgs::PoseStamped kf2b_pose;  
+  kf2b_pose.header.frame_id = "keyframe";
+  kf2b_pose.header.stamp = header.stamp;  
+  kf2b_pose.pose.orientation.x = q_current_kb.x();
+  kf2b_pose.pose.orientation.y = q_current_kb.y();
+  kf2b_pose.pose.orientation.z = q_current_kb.z();
+  kf2b_pose.pose.orientation.w = q_current_kb.w();
+  kf2b_pose.pose.position.x = t_current_kb.x();
+  kf2b_pose.pose.position.y = t_current_kb.y();
+  kf2b_pose.pose.position.z = t_current_kb.z();
+
+  kf2b_pub_.publish(kf2b_pose);
+
   // Publishing twist
   geometry_msgs::TwistStamped twist_msg;
   twist_msg.header.frame_id = base_frame_;
@@ -488,11 +525,22 @@ void LidarOdometer::publish(const std_msgs::Header& header, const Eigen::Isometr
 
   //Publishing TF
   if (publish_tf_) {
+
     tf::Transform transform;
-    transform.setOrigin(tf::Vector3(t_current.x(), t_current.y(), t_current.z()));
-    tf::Quaternion q(q_current.x(), q_current.y(), q_current.z(), q_current.w());
-    transform.setRotation(q);
-    tf_broadcaster_.sendTransform(tf::StampedTransform(transform, header.stamp, fixed_frame_, base_frame_));
+
+    // oTk
+    Eigen::Quaterniond q_current_world(prev_kf_.rotation());
+    Eigen::Vector3d t_current_world = prev_kf_.translation();    
+    transform.setOrigin(tf::Vector3(t_current_world.x(), t_current_world.y(), t_current_world.z()));
+    tf::Quaternion q(q_current_world.x(), q_current_world.y(), q_current_world.z(), q_current_world.w());
+    transform.setRotation(q);    
+    tf_broadcaster_.sendTransform(tf::StampedTransform(transform, header.stamp, fixed_frame_, "keyframe"));
+
+    // kTb    
+    transform.setOrigin(tf::Vector3(t_current_kb.x(), t_current_kb.y(), t_current_kb.z()));
+    tf::Quaternion q_kb(q_current_kb.x(), q_current_kb.y(), q_current_kb.z(), q_current_kb.w());
+    transform.setRotation(q_kb);
+    tf_broadcaster_.sendTransform(tf::StampedTransform(transform, header.stamp, "keyframe", base_frame_));
   }
 }
 

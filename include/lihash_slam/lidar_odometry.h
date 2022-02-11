@@ -86,6 +86,7 @@ class LidarOdometer {
   // ROS variables
   ros::NodeHandle nh_;
   ros::Publisher odom_pub_;
+  ros::Publisher kf2b_pub_;
   ros::Publisher twist_pub_;
   ros::Publisher kf_pub_;
   tf::TransformBroadcaster tf_broadcaster_;
