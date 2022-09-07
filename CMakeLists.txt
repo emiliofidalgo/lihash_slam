@@ -94,48 +94,38 @@ include_directories(
   ${G2O_INCLUDE_DIRS}
 )
 
-#### Preprocessor Node
-add_executable(preprocessor
-    src/pc_processor.cc
-    src/nodes/preprocessor.cc)
-target_link_libraries(preprocessor
+#### KeyframeMaker Node
+add_executable(kfmaker
+    src/keyframe_maker.cc
+    src/nodes/kfmaker.cc)
+target_link_libraries(kfmaker
     ${catkin_LIBRARIES}
     ${PCL_LIBRARIES}
 )
 
-#### Odometer Node
-add_executable(odometer
-    src/lidar_odometry.cc
-    src/nodes/odometer.cc)
-target_link_libraries(odometer
-    ${catkin_LIBRARIES}
-    ${PCL_LIBRARIES}
-    ${CERES_LIBRARIES}
-)
+# #### Loop Detector Node
+# add_executable(loop_detector
+#     include/lihash_slam/loop_detector_base.hpp
+#     src/loop_detector_pose.cc
+#     src/iscGenerationClass.cpp
+#     src/Scancontext.cpp
+#     src/loop_detector_isc.cc
+#     src/loop_detector_sc.cc
+#     src/nodes/loop_detector.cc)
+# target_link_libraries(loop_detector
+#     ${catkin_LIBRARIES}
+#     ${PCL_LIBRARIES}    
+# )
 
-#### Loop Detector Node
-add_executable(loop_detector
-    include/lihash_slam/loop_detector_base.hpp
-    src/loop_detector_pose.cc
-    src/iscGenerationClass.cpp
-    src/Scancontext.cpp
-    src/loop_detector_isc.cc
-    src/loop_detector_sc.cc
-    src/nodes/loop_detector.cc)
-target_link_libraries(loop_detector
-    ${catkin_LIBRARIES}
-    ${PCL_LIBRARIES}    
-)
-
-#### Mapper Node
-add_executable(mapper    
-    src/cell.cc
-    src/keyframe.cc
-    src/information_matrix.cpp
-    src/map.cc
-    src/nodes/mapper.cc)
-target_link_libraries(mapper
-    ${catkin_LIBRARIES}
-    ${PCL_LIBRARIES}
-    ${G2O_LIBRARIES}    
-)
+# #### Mapper Node
+# add_executable(mapper    
+#     src/cell.cc
+#     src/keyframe.cc
+#     src/information_matrix.cpp
+#     src/map.cc
+#     src/nodes/mapper.cc)
+# target_link_libraries(mapper
+#     ${catkin_LIBRARIES}
+#     ${PCL_LIBRARIES}
+#     ${G2O_LIBRARIES}    
+# )
