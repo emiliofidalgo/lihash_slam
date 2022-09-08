@@ -46,13 +46,13 @@ void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   pcl::fromROSMsg(kf_msg->points, *pc_new);
 
   // Creating an isometry
-  Eigen::Quaterniond q_current(kf_msg->pose.orientation.w,
-                               kf_msg->pose.orientation.x,
-                               kf_msg->pose.orientation.y,
-                               kf_msg->pose.orientation.z);
-  Eigen::Vector3d t_current(kf_msg->pose.position.x,
-                            kf_msg->pose.position.y,
-                            kf_msg->pose.position.z);
+  Eigen::Quaterniond q_current(kf_msg->odom_pose.orientation.w,
+                               kf_msg->odom_pose.orientation.x,
+                               kf_msg->odom_pose.orientation.y,
+                               kf_msg->odom_pose.orientation.z);
+  Eigen::Vector3d t_current(kf_msg->odom_pose.position.x,
+                            kf_msg->odom_pose.position.y,
+                            kf_msg->odom_pose.position.z);
 
   Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
   pose.linear() = q_current.toRotationMatrix();

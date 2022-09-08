@@ -103,19 +103,19 @@ target_link_libraries(kfmaker
     ${PCL_LIBRARIES}
 )
 
-# #### Loop Detector Node
-# add_executable(loop_detector
-#     include/lihash_slam/loop_detector_base.hpp
-#     src/loop_detector_pose.cc
-#     src/iscGenerationClass.cpp
-#     src/Scancontext.cpp
-#     src/loop_detector_isc.cc
-#     src/loop_detector_sc.cc
-#     src/nodes/loop_detector.cc)
-# target_link_libraries(loop_detector
-#     ${catkin_LIBRARIES}
-#     ${PCL_LIBRARIES}    
-# )
+#### Loop Detector Node
+add_executable(loop_detector
+    include/lihash_slam/loop_detector_base.hpp
+    src/loop_detector_pose.cc
+    src/iscGenerationClass.cpp
+    src/Scancontext.cpp
+    src/loop_detector_isc.cc
+    src/loop_detector_sc.cc
+    src/nodes/loop_detector.cc)
+target_link_libraries(loop_detector
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}    
+)
 
 # #### Mapper Node
 # add_executable(mapper    

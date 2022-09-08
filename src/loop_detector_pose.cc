@@ -52,25 +52,25 @@ void LoopDetectorPose::addFrame(const int id, const Eigen::Isometry3d& pose, con
   int curr_id = id;
 
   // Computing the absolute pose of the frame
-  Eigen::Isometry3d abs_pose;
-  if (frames.size() > 0) {
-    abs_pose = frames[frames.size() - 1].pose * pose;
-  } else {
-    abs_pose = Eigen::Isometry3d::Identity();
-  }
+  // Eigen::Isometry3d abs_pose;
+  // if (frames.size() > 0) {
+  //   abs_pose = frames[frames.size() - 1].pose * pose;
+  // } else {
+  //   abs_pose = Eigen::Isometry3d::Identity();
+  // }
 
-  LoopFrame frame(curr_id, abs_pose, points);
+  LoopFrame frame(curr_id, pose, points);
   frames.push_back(frame);
 
   if (curr_id == 0) { // If this is the first frame
     acc_dists.push_back(0.0);
   } else {
     // Compute the distance between this frame and the previous one
-    //Eigen::Isometry3d T12 = frames[curr_id - 1].pose.inverse() * pose;    
-    double d_trans = pose.translation().norm();
+    Eigen::Isometry3d T12 = frames[frames.size() - 2].pose.inverse() * pose;
+    double d_trans = T12.translation().norm();    
 
     // Track the accumulated distance on each frame
-    acc_dists.push_back(acc_dists[curr_id - 1] + d_trans);
+    acc_dists.push_back(acc_dists[acc_dists.size() - 1] + d_trans);
   }
 }
 
@@ -86,12 +86,13 @@ bool LoopDetectorPose::detect(Loop& loop) {
   // Finding loop candidates
   std::vector<LoopFrame*> candidates;
   for (unsigned i = 0; i < frames.size() - 1; i++) {
+    
     // Check the accumulated distance between frames
     if (cur_acc_dist - acc_dists[i] < accum_dist_th_) {
       continue;
     }
 
-    // Check the distance between frames
+    // Check the distance between frames    
     double dist = (frames[i].pose.inverse() * cur_frame->pose).translation().norm();
     if (dist > dist_th_) {
       continue;

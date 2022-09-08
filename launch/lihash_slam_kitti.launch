@@ -35,6 +35,9 @@
   <arg name="sectors" default="60" />
   <arg name="max_dist" default="40.0" />
 
+  <!-- LCD SC -->
+  <arg name="score_th_sc" default="0.5" />
+
   <!-- Mapper -->
   <arg name="map_frame" default="world" />
   <arg name="cell_xy_size" default="20.0" />
@@ -96,10 +99,11 @@
     </node>
 
     <!-- Loop Detector -->
-    <!--node pkg="lihash_slam"
+    <node pkg="lihash_slam"
           type="loop_detector"
           name="loop_detector"
-          output="screen">
+          output="screen"
+          respawn="false">
       
       <param name="lcd_method" value="$(arg lcd_method)" />
       <param name="dist_th" value="$(arg dist_th)" />
@@ -108,11 +112,12 @@
       <param name="rings" value="$(arg rings)" />
       <param name="sectors" value="$(arg sectors)" />
       <param name="max_dist" value="$(arg max_dist)" />
+      <param name="score_th_sc" value="$(arg score_th_sc)" />
       
-      <remap from="~kfs" to="odometer/kfs" />
+      <remap from="~kfs" to="kfmaker/kfs" />
     </node>
 
-    <! Mapper >
+    <!-- Mapper >
     <node pkg="lihash_slam"
           type="mapper"
           name="mapper"

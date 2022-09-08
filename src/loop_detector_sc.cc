@@ -30,7 +30,7 @@ LoopDetectorSC::~LoopDetectorSC() {
 
 void LoopDetectorSC::readParams(const ros::NodeHandle& nh) {
   // Best score thresh
-  nh.param("score_th", score_th_, 4.0);
+  nh.param("score_th_sc", score_th_, 4.0);
   ROS_INFO("Best score thresh: %.2f", score_th_);
 }
 
@@ -41,7 +41,8 @@ void LoopDetectorSC::init() {
 void LoopDetectorSC::addFrame(const int id, const Eigen::Isometry3d& pose, const PointCloud::Ptr& points) {  
   
   int curr_id = id;
-  LoopFrame frame(curr_id, Eigen::Isometry3d::Identity(), points);
+  // LoopFrame frame(curr_id, Eigen::Isometry3d::Identity(), points);
+  LoopFrame frame(curr_id, pose, points);
   frames.push_back(frame);
 
   // Adding the frame to ScanContext
