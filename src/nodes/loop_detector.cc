@@ -64,6 +64,7 @@ void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   if (ldet->detect(loop)) {
     lihash_slam::LoopClosure lc_msg;
     lc_msg.header = kf_msg->header;
+    lc_msg.header.frame_id = "loop";
     lc_msg.f1 = loop.frame1;
     lc_msg.f2 = loop.frame2;
     Eigen::Quaterniond q_current(loop.rel_pose.rotation());
