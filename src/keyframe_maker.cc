@@ -193,14 +193,14 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
       }
 
       // Publish the message
-      kf_pub_.publish(kf_msg);
-
-      // Publishing poses
-      publish(header, pose);
+      kf_pub_.publish(kf_msg);      
 
       // Create a new KF
       prev_kf_ = curr_kf_;
       curr_kf_ = pose;
+
+      // Publishing poses
+      publish(header, pose);
       
       // Cleaning up the points
       kf_points_->clear();
@@ -211,7 +211,7 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
       *kf_points_ += *edges_base;
 
       // Resetting the number of received frames
-      acc_frames_ = 0;
+      acc_frames_ = 1;
 
       // Updating the keyframe stamp
       kf_stamp_ = header.stamp.toSec();
