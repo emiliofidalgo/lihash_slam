@@ -24,6 +24,7 @@
 
 // ROS
 #include <ros/ros.h>
+#include <ros/time.h>
 #include <geometry_msgs/Pose.h>
 
 // G2O
@@ -43,12 +44,14 @@ class Keyframe {
 
   void addFramePoses(const std::vector<geometry_msgs::Pose>& rel_poses);
  
-  int id;  
-  Eigen::Isometry3d pose;    // Pose in world coords
-  PointCloud::Ptr points;    // Points in KF coords
+  int id;
+  Eigen::Isometry3d pose_est;   // Pose estimated
+  Eigen::Isometry3d pose_odom;  // Odom pose
+  PointCloud::Ptr points;       // Points in KF coords
   g2o::VertexSE3* node;
+  ros::Time stamp_;
   std::vector<int> loops;
-  std::vector<Eigen::Isometry3d> frame_poses;
+  std::vector<Eigen::Isometry3d> frame_poses;  
 };
 
 }  // namespace lihash_slam

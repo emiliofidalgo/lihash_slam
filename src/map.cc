@@ -68,9 +68,11 @@ Map::~Map() {
 
 void Map::addKeyframe(lihash_slam::Keyframe* kf) {
 
+  Eigen::Isometry3d rel_pose = kf->pose_est;
+
   // Computing the global pose of the Keyframe
   if (keyframes_.size() > 0) {
-    kf->pose = keyframes_[keyframes_.size() - 1]->pose * kf->pose;
+    kf->pose_est = keyframes_[keyframes_.size() - 1]->pose_est * kf->pose_est;
   }  
   
   // Adding the keyframe to the map
@@ -79,7 +81,7 @@ void Map::addKeyframe(lihash_slam::Keyframe* kf) {
   // Adding the node to the graph
   g2o::VertexSE3* v(new g2o::VertexSE3());
   v->setId(kf->id);
-  v->setEstimate(kf->pose);
+  v->setEstimate(kf->pose_est);
   kf->node = v;
   optimizer_.addVertex(v);
 
@@ -92,7 +94,6 @@ void Map::addKeyframe(lihash_slam::Keyframe* kf) {
 
     // Adding an edge with the previous node
     lihash_slam::Keyframe* prev_kf = keyframes_[keyframes_.size() - 2];
-    Eigen::Isometry3d rel_pose = prev_kf->pose.inverse() * kf->pose;
 
     // Compute information matrix
     Eigen::MatrixXd im = infcalc_.calcInfMatrix(prev_kf->points, kf->points, rel_pose);
@@ -101,12 +102,12 @@ void Map::addKeyframe(lihash_slam::Keyframe* kf) {
     e->setMeasurement(rel_pose);
     e->setInformation(im);
     e->vertices()[0] = prev_kf->node;
-    e->vertices()[1] = kf->node;                     
+    e->vertices()[1] = kf->node;
     optimizer_.addEdge(e);
   }
 
   // Adding points
-  addMapPoints(kf->points, kf->pose);
+  addMapPoints(kf->points, kf->pose_est);
 }
 
 void Map::addLoopClosure(const int f1, const int f2, const Eigen::Isometry3d& rel_pose) {
@@ -139,13 +140,13 @@ void Map::optimize(const int iters) {
 
   // Update the pose on every keyframe
   for (size_t i = 0; i < keyframes_.size(); i++) {
-    keyframes_[i]->pose = keyframes_[i]->node->estimate();    
+    keyframes_[i]->pose_est = keyframes_[i]->node->estimate();    
   }
 
   // Generate the new optimized map
   clearMapPoints();
   for (size_t i = 0; i < keyframes_.size(); i++) {
-    addMapPoints(keyframes_[i]->points, keyframes_[i]->pose);
+    addMapPoints(keyframes_[i]->points, keyframes_[i]->pose_est);
   }
 }
 

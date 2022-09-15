@@ -45,7 +45,9 @@
   <arg name="cell_resolution" default="0.4" />
   <arg name="cell_min_points" default="50" />
   <arg name="publish_tf_slam" default="true" />
+  <arg name="publish_tf_period" default="1.0" />
   <arg name="publish_map_period" default="4.0" />
+  <arg name="optimize_period" default="3.0" />
   <arg name="results_file" default="/home/emilio/Escritorio/poses.txt" />
 
   <param name="use_sim_time" value="true"/>
@@ -117,11 +119,12 @@
       <remap from="~kfs" to="kfmaker/kfs" />
     </node>
 
-    <!-- Mapper >
+    <!-- Mapper -->
     <node pkg="lihash_slam"
           type="mapper"
           name="mapper"
-          output="screen">  
+          output="screen"
+          respawn="false">  
 
       <param name="map_frame" value="$(arg map_frame)" />
       <param name="odom_frame" value="$(arg odom_frame)" />
@@ -130,21 +133,23 @@
       <param name="cell_resolution" value="$(arg cell_resolution)" />
       <param name="cell_min_points" value="$(arg cell_min_points)" />
       <param name="publish_tf" value="$(arg publish_tf_slam)" />
+      <param name="publish_tf_period" value="$(arg publish_tf_period)" />
       <param name="publish_map_period" value="$(arg publish_map_period)" />
+      <param name="optimize_period" value="$(arg optimize_period)" />
       <param name="results_file" value="$(arg results_file)" />
       
-      <remap from="~kfs"   to="odometer/kfs" />
+      <remap from="~kfs"   to="kfmaker/kfs" />
       <remap from="~lc"    to="loop_detector/lc" />
-      <remap from="~k2b"    to="odometer/kf2b" />
-    </node-->
+      <remap from="~k2b"   to="kfmaker/k2b" />
+    </node>
 
   </group>
 
-  <node pkg="tf"
+  <!--node pkg="tf"
         type="static_transform_publisher"
 	      name="world2odom"
 	      args="0 0 0 0 0 0 world odom 1000" >
-  </node>
+  </node-->
 
   <node pkg="tf"
         type="static_transform_publisher"

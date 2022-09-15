@@ -117,15 +117,15 @@ target_link_libraries(loop_detector
     ${PCL_LIBRARIES}    
 )
 
-# #### Mapper Node
-# add_executable(mapper    
-#     src/cell.cc
-#     src/keyframe.cc
-#     src/information_matrix.cpp
-#     src/map.cc
-#     src/nodes/mapper.cc)
-# target_link_libraries(mapper
-#     ${catkin_LIBRARIES}
-#     ${PCL_LIBRARIES}
-#     ${G2O_LIBRARIES}    
-# )
+#### Mapper Node
+add_executable(mapper    
+    src/cell.cc
+    src/keyframe.cc
+    src/information_matrix.cpp
+    src/map.cc
+    src/nodes/mapper.cc)
+target_link_libraries(mapper
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}
+    ${G2O_LIBRARIES}    
+)

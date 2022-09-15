@@ -41,18 +41,17 @@
 #include <lihash_slam/LoopClosure.h>
 
 // Message queues
+std::deque<lihash_slam::Keyframe*> queue_kfs;
 std::deque<lihash_slam::LoopClosure> queue_lcs;
 
 // Map structure
 lihash_slam::Map* map;
 
-// Variable to check if a LC has been added
-bool lc_added;
-
 // Common params
 std::string map_frame;
 std::string odom_frame;
 bool publish_tf;
+double tf_period;
 
 // ROS
 ros::Publisher map_points_pub;
@@ -62,49 +61,8 @@ ros::Publisher map_traj_pub;
 ros::Publisher pose_pub;
 
 // Transforms
-Eigen::Isometry3d kTb;    // Received from odom (in PoseStamped topic)
-Eigen::Isometry3d oTk;    // Received from odom (in KeyframeMessage topic)
-Eigen::Isometry3d mTk;    // Computed by LiHash
 Eigen::Isometry3d mTo;    // Correction computed by SLAM
-tf::Transform mTo_tf;     
-
-int processLoopClosures() {
-
-  // Processing Loop Closures
-  int lc_processed = 0;
-  std::deque<lihash_slam::LoopClosure> new_queue_lcs;
-
-  for (size_t i = 0; i < queue_lcs.size(); i++) {
-    
-    lihash_slam::LoopClosure lc = queue_lcs[i];
-
-    if (map->existsKeyframe(lc.f1) && map->existsKeyframe(lc.f2)) {
-
-      // Creating an isometry
-      Eigen::Quaterniond q_current(lc.rel_pose.orientation.w,
-                                  lc.rel_pose.orientation.x,
-                                  lc.rel_pose.orientation.y,
-                                  lc.rel_pose.orientation.z);
-      Eigen::Vector3d t_current(lc.rel_pose.position.x,
-                                lc.rel_pose.position.y,
-                                lc.rel_pose.position.z);
-      Eigen::Isometry3d rel_pose = Eigen::Isometry3d::Identity();
-      rel_pose.linear() = q_current.toRotationMatrix();
-      rel_pose.translation() = t_current;
-
-      map->addLoopClosure(lc.f1, lc.f2, rel_pose);
-
-      lc_processed++;      
-    } else {
-      new_queue_lcs.push_back(lc);
-    }
-  }
-
-  queue_lcs.erase(queue_lcs.begin(), queue_lcs.end());
-  queue_lcs = new_queue_lcs;
-
-  return lc_processed;
-}
+tf::Transform mTo_tf;
 
 void publishKeyframes() {
 
@@ -157,7 +115,7 @@ void publishKeyframes() {
     marker_kfs.points.resize(kfs->size());
     marker_links.points.resize(kfs->size());
     for (size_t i = 0; i < kfs->size(); i++) {
-      Eigen::Vector3d pose = kfs->at(i)->pose.translation();
+      Eigen::Vector3d pose = kfs->at(i)->pose_est.translation();
       marker_kfs.points[i].x = pose.x();
       marker_kfs.points[i].y = pose.y();
       marker_kfs.points[i].z = pose.z();      
@@ -178,9 +136,9 @@ void publishKeyframes() {
         // LC
         int cand_ind = kfs->at(i)->loops[j];
         geometry_msgs::Point pose2;
-        pose2.x = kfs->at(cand_ind)->pose.translation().x();
-        pose2.y = kfs->at(cand_ind)->pose.translation().y();
-        pose2.z = kfs->at(cand_ind)->pose.translation().z();        
+        pose2.x = kfs->at(cand_ind)->pose_est.translation().x();
+        pose2.y = kfs->at(cand_ind)->pose_est.translation().y();
+        pose2.z = kfs->at(cand_ind)->pose_est.translation().z();        
 
         marker_loops.points.push_back(pose1);
         marker_loops.points.push_back(pose2);
@@ -264,7 +222,7 @@ void publishMap(const ros::TimerEvent& event) {
     std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();    
     for (size_t i = 0; i < kfs->size(); i++) {
       // Getting the KF pose
-      Eigen::Isometry3d pose = kfs->at(i)->pose;
+      Eigen::Isometry3d pose = kfs->at(i)->pose_est;
 
       // Adding the pose to the list
       geometry_msgs::Point kf_p;
@@ -303,8 +261,8 @@ void writeResults(const std::string& results_file) {
   std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
   for (size_t i = 0; i < kfs->size(); i++) {
     // Getting the KF pose
-    Eigen::Isometry3d pose_iso = kfs->at(i)->pose;
-    Eigen::Matrix4d pose = kfs->at(i)->pose.matrix();
+    Eigen::Isometry3d pose_iso = kfs->at(i)->pose_est;
+    Eigen::Matrix4d pose = kfs->at(i)->pose_est.matrix();
     poses.push_back(pose);
 
     // Iterating through each frame
@@ -343,24 +301,76 @@ void writeResults(const std::string& results_file) {
   }  
 }
 
+int processKeyframes() {
+
+  // Processing new Keyframes
+  int kf_processed = 0;
+  for (size_t i = 0; i < queue_kfs.size(); i++) {    
+    lihash_slam::Keyframe* kf = queue_kfs[i];
+    map->addKeyframe(kf);
+  }
+
+  queue_kfs.erase(queue_kfs.begin(), queue_kfs.end());
+
+  return kf_processed;
+}
+
+int processLoopClosures() {
+
+  // Processing Loop Closures
+  int lc_processed = 0;
+  std::deque<lihash_slam::LoopClosure> new_queue_lcs;
+
+  for (size_t i = 0; i < queue_lcs.size(); i++) {
+    
+    lihash_slam::LoopClosure lc = queue_lcs[i];
+
+    if (map->existsKeyframe(lc.f1) && map->existsKeyframe(lc.f2)) {
+
+      // Creating an isometry
+      Eigen::Quaterniond q_current(lc.rel_pose.orientation.w,
+                                  lc.rel_pose.orientation.x,
+                                  lc.rel_pose.orientation.y,
+                                  lc.rel_pose.orientation.z);
+      Eigen::Vector3d t_current(lc.rel_pose.position.x,
+                                lc.rel_pose.position.y,
+                                lc.rel_pose.position.z);
+      Eigen::Isometry3d rel_pose = Eigen::Isometry3d::Identity();
+      rel_pose.linear() = q_current.toRotationMatrix();
+      rel_pose.translation() = t_current;
+
+      map->addLoopClosure(lc.f1, lc.f2, rel_pose);
+
+      lc_processed++;      
+    } else {
+      new_queue_lcs.push_back(lc);
+    }
+  }
+
+  queue_lcs.erase(queue_lcs.begin(), queue_lcs.end());
+  queue_lcs = new_queue_lcs;
+
+  return lc_processed;
+}
+
 void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   
   // Converting ROS message to PCL
   lihash_slam::PointCloud::Ptr pc_new(new lihash_slam::PointCloud);
   pcl::fromROSMsg(kf_msg->points, *pc_new);
 
-  // Creating an isometry
-  Eigen::Quaterniond q_current(kf_msg->pose.orientation.w,
-                               kf_msg->pose.orientation.x,
-                               kf_msg->pose.orientation.y,
-                               kf_msg->pose.orientation.z);
-  Eigen::Vector3d t_current(kf_msg->pose.position.x,
-                            kf_msg->pose.position.y,
-                            kf_msg->pose.position.z);
+  // Creating an isometry from the relative pose
+  Eigen::Quaterniond q_current(kf_msg->rel_pose.orientation.w,
+                               kf_msg->rel_pose.orientation.x,
+                               kf_msg->rel_pose.orientation.y,
+                               kf_msg->rel_pose.orientation.z);
+  Eigen::Vector3d t_current(kf_msg->rel_pose.position.x,
+                            kf_msg->rel_pose.position.y,
+                            kf_msg->rel_pose.position.z);
 
-  Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
-  pose.linear() = q_current.toRotationMatrix();
-  pose.translation() = t_current;
+  Eigen::Isometry3d pose_rel = Eigen::Isometry3d::Identity();
+  pose_rel.linear() = q_current.toRotationMatrix();
+  pose_rel.translation() = t_current;
 
   // Creating an isometry from the odometry pose
   Eigen::Quaterniond q_current_odom(kf_msg->odom_pose.orientation.w,
@@ -370,36 +380,44 @@ void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   Eigen::Vector3d t_current_odom(kf_msg->odom_pose.position.x,
                             kf_msg->odom_pose.position.y,
                             kf_msg->odom_pose.position.z);  
-  oTk.linear() = q_current_odom.toRotationMatrix();
-  oTk.translation() = t_current_odom;
+  Eigen::Isometry3d pose_odom = Eigen::Isometry3d::Identity();
+  pose_odom.linear() = q_current_odom.toRotationMatrix();
+  pose_odom.translation() = t_current_odom;
 
   lihash_slam::Keyframe* kf = new lihash_slam::Keyframe(
                                 kf_msg->header.seq,
-                                pose,
+                                pose_rel,
                                 pc_new);
+  kf->pose_odom = pose_odom;
+  kf->stamp_ = kf_msg->header.stamp;
   kf->addFramePoses(kf_msg->rel_poses);
-  
-  map->addKeyframe(kf);
 
-  // Saving the optimized position of the last keyframe
-  std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
-  mTk = kfs->at(kfs->size() - 1)->pose;
-
-  publishKeyframes();
+  queue_kfs.push_back(kf);
 }
 
 void lcClb(const lihash_slam::LoopClosureConstPtr& lc_msg) {
   
-  queue_lcs.push_back(*lc_msg);
+  queue_lcs.push_back(*lc_msg);  
+}
 
+void optimize(const ros::TimerEvent& event) {
+  
+  // Inserting new received keyframes
+  processKeyframes();
+
+  // Inserting new detected LCs
   int nloops = processLoopClosures();
 
+  // Getting keyframes
+  std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
+
+  // Optimize the graph is there any new loop closure
   if (nloops > 0) {
     map->optimize();
 
-    // Saving the optimized position of the last keyframe
-    std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
-    mTk = kfs->at(kfs->size() - 1)->pose;
+    // Saving the optimized position of the last keyframe    
+    Eigen::Isometry3d mTk = kfs->at(kfs->size() - 1)->pose_est;
+    Eigen::Isometry3d oTk = kfs->at(kfs->size() - 1)->pose_odom;    
 
     // Computing the correction from map to odom
     mTo = mTk * oTk.inverse();
@@ -409,53 +427,19 @@ void lcClb(const lihash_slam::LoopClosureConstPtr& lc_msg) {
     mTo_tf.setOrigin(tf::Vector3(t_current.x(), t_current.y(), t_current.z()));
     tf::Quaternion q(q_current.x(), q_current.y(), q_current.z(), q_current.w());
     mTo_tf.setRotation(q);
-
-    // Sending the mTo transform
-    //static tf::TransformBroadcaster tf_broadcaster_;
-    //tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, lc_msg->header.stamp, "world", "odom"));
   }
+  
+  publishKeyframes();
 }
 
-void k2bClb(const geometry_msgs::PoseStampedConstPtr& k2b_msg) {
-
-  // Creating an isometry
-  Eigen::Quaterniond q_current(k2b_msg->pose.orientation.w,
-                               k2b_msg->pose.orientation.x,
-                               k2b_msg->pose.orientation.y,
-                               k2b_msg->pose.orientation.z);
-  Eigen::Vector3d t_current(k2b_msg->pose.position.x,
-                            k2b_msg->pose.position.y,
-                            k2b_msg->pose.position.z);  
-  kTb.linear() = q_current.toRotationMatrix();
-  kTb.translation() = t_current;
-
-  // Converting the pose regarding the map
-  Eigen::Isometry3d mTb = mTk * kTb;
-
-  // Republishing the pose 
-  Eigen::Quaterniond q_current_m2b(mTb.rotation());
-  Eigen::Vector3d t_current_m2b = mTb.translation();
-
-  // Creating the base message
-  geometry_msgs::PoseWithCovarianceStamped msg;
-  msg.header.frame_id = map_frame;
-  msg.header.stamp = k2b_msg->header.stamp;
-
-  // Filling the pose
-  msg.pose.pose.orientation.x = q_current_m2b.x();
-  msg.pose.pose.orientation.y = q_current_m2b.y();
-  msg.pose.pose.orientation.z = q_current_m2b.z();
-  msg.pose.pose.orientation.w = q_current_m2b.w();
-  msg.pose.pose.position.x = t_current_m2b.x();
-  msg.pose.pose.position.y = t_current_m2b.y();
-  msg.pose.pose.position.z = t_current_m2b.z();
-
-  pose_pub.publish(msg);
+void publishTF(const ros::TimerEvent& event) {
+  
+  ros::Time kf_stamp = ros::Time::now() + ros::Duration(tf_period);
 
   // Sending the mTo transform
   if (publish_tf) {
     static tf::TransformBroadcaster tf_broadcaster_;
-    tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, k2b_msg->header.stamp, map_frame, odom_frame));
+    tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, kf_stamp, map_frame, odom_frame));
   }
 }
 
@@ -485,10 +469,17 @@ int main(int argc, char** argv) {
   // Publish TF
   nh.param("publish_tf", publish_tf, true);
   ROS_INFO("Publish TF: %s", publish_tf ? "Yes" : "No");
+  
+  nh.param("publish_tf_period", tf_period, 1.0);
+  ROS_INFO("Publish TF Period: %.2f", tf_period);
 
   double map_period;
   nh.param("publish_map_period", map_period, 4.0);
   ROS_INFO("Publish Map Period: %.2f", map_period);
+
+  double optim_period;
+  nh.param("optimize_period", optim_period, 3.0);
+  ROS_INFO("Optimization Period: %.2f", optim_period);
 
   // Map frame
   nh.param<std::string>("map_frame", map_frame, "map");
@@ -496,7 +487,7 @@ int main(int argc, char** argv) {
 
   // Odom frame
   nh.param<std::string>("odom_frame", odom_frame, "odom");
-  ROS_INFO("Odom frame: %s", map_frame.c_str());
+  ROS_INFO("Odom frame: %s", odom_frame.c_str());
 
   std::string results_file;
   nh.param<std::string>("results_file", results_file, "/home/emilio/Escritorio/poses.txt");
@@ -504,12 +495,8 @@ int main(int argc, char** argv) {
 
   // Initializing the map
   map = new lihash_slam::Map(cell_xy_size, cell_z_size, resolution, cell_min_points);
-  lc_added = false;
 
   // Initializing transforms
-  kTb = Eigen::Isometry3d::Identity();
-  oTk = Eigen::Isometry3d::Identity();
-  mTk = Eigen::Isometry3d::Identity();
   mTo = Eigen::Isometry3d::Identity();
   mTo_tf.setOrigin(tf::Vector3(0, 0, 0));
   tf::Quaternion q(0, 0, 0, 1);
@@ -522,18 +509,16 @@ int main(int argc, char** argv) {
   // LCs
   ros::Subscriber lc_sub = nh.subscribe("lc", 100, lcClb);
 
-  // K2B pose
-  ros::Subscriber k2b_sub = nh.subscribe("k2b", 100, k2bClb);
-
   // Publishers
   map_points_pub = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);
   map_kfs_pub    = nh.advertise<visualization_msgs::MarkerArray>("map/keyframes", 120, true);
   map_cells_pub  = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
   map_traj_pub   = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
-  pose_pub       = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose", 120, true);
 
   // Timers  
   ros::Timer pub_timer = nh.createTimer(ros::Duration(map_period), publishMap);
+  ros::Timer opt_timer = nh.createTimer(ros::Duration(optim_period), optimize);
+  ros::Timer tf_timer  = nh.createTimer(ros::Duration(tf_period), publishTF);
 
   // Receiving messages
   ros::spin();

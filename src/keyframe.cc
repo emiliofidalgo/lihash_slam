@@ -23,17 +23,21 @@ namespace lihash_slam {
 
 Keyframe::Keyframe() :
   id(-1),
-  pose(Eigen::Isometry3d::Identity()),
+  pose_est(Eigen::Isometry3d::Identity()),
+  pose_odom(Eigen::Isometry3d::Identity()),
   points(new PointCloud),
-  node(nullptr) {
+  node(nullptr),
+  stamp_(ros::Time::now()) {
     // TODO Prereserve memory according to a maximum number of points.
 }
 
 Keyframe::Keyframe(const int id_, Eigen::Isometry3d& pose_, const PointCloud::Ptr& pc_) :
   id(id_),
-  pose(pose_),
+  pose_est(pose_),
+  pose_odom(Eigen::Isometry3d::Identity()),
   points(new PointCloud),
-  node(nullptr) {
+  node(nullptr),
+  stamp_(ros::Time::now()) {
     // TODO Prereserve memory according to a maximum number of points.
     *points += *pc_;
 }
