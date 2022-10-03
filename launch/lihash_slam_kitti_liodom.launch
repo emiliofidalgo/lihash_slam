@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<launch>
+  
+  <arg name="viz" default="true" />
+
+  <!-- LiODOM -->
+  <arg name="min_range" default="3.0" />
+  <arg name="max_range" default="75.0" />
+  <arg name="lidar_type" default="0" />
+  <arg name="scan_lines" default="64" />
+  <arg name="scan_regions" default="8" />
+  <arg name="edges_per_region" default="10" />
+
+  <!-- Odometer -->  
+  <arg name="odom_frame" default="odom" />
+  <arg name="base_frame" default="base_link" />
+  <arg name="lidar_frame" default="laser" />
+  <arg name="publish_tf_odom" default="true" />
+  <arg name="kf_dist" default="15.0" />
+  <arg name="kf_rot" default="2.0" />
+  <arg name="kf_frames" default="10" />
+  <arg name="lmap_frames" default="15" />
+  
+  <!-- Loop Detector -->
+  <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC, 2: SC -->
+  
+  <!-- LCD Pose -->
+  <arg name="dist_th" default="25.0" />         <!-- 06: 10.0                             -->
+  <arg name="accum_dist_th" default="50.0" />   <!-- 06: 80.0                             -->
+  <arg name="score_th" default="1.0" />         <!-- 06: 2.5 for Pose. 1.0: SC, 4.0: Pose -->
+
+  <!-- LCD ISC -->
+  <arg name="rings" default="60" />
+  <arg name="sectors" default="60" />
+  <arg name="max_dist" default="40.0" />
+
+  <!-- Mapper -->
+  <arg name="map_frame" default="world" />
+  <arg name="cell_xy_size" default="20.0" />
+  <arg name="cell_z_size" default="25.0" />
+  <arg name="cell_resolution" default="0.4" />
+  <arg name="cell_min_points" default="50" />
+  <arg name="publish_tf_slam" default="true" />
+  <arg name="publish_map_period" default="4.0" />
+  <arg name="results_file" default="/home/emilio/Escritorio/poses.txt" />
+
+  <param name="use_sim_time" value="true"/>
+
+  <group ns="lihash_slam">
+
+    <!-- LiODOM -->
+   <node pkg="liodom"
+      type="liodom_node"
+      name="liodom"
+      output="screen"
+      respawn="false">
+
+      <param name="min_range" type="double" value="$(arg min_range)" />
+      <param name="max_range" type="double" value="$(arg max_range)" />
+      <param name="lidar_type" type="int" value="$(arg lidar_type)" />
+      <param name="scan_lines" type="int" value="$(arg scan_lines)" />
+      <param name="scan_regions" type="int" value="$(arg scan_regions)" />
+      <param name="edges_per_region" type="int" value="$(arg edges_per_region)" />
+      <param name="prev_frames" type="int" value="$(arg lmap_frames)" />
+      <param name="fixed_frame" type="string" value="$(arg odom_frame)" />
+      <param name="base_frame" type="string" value="$(arg base_frame)" />
+      <param name="laser_frame" type="string" value="$(arg lidar_frame)" />
+      <param name="use_imu" type="bool" value="false" />
+      <param name="save_results" type="bool" value="false" />
+      <param name="save_results_dir" type="string" value="/home/emilio/Escritorio/results/liodom/" />
+      <param name="mapping" type="bool" value="false" />
+      <param name="publish_tf" type="bool" value="false" />      
+    
+       <remap from="~points" to="/kitti/velo/pointcloud" />
+
+    </node>
+
+    <!-- Preprocessor -->
+    <!--node pkg="lihash_slam"
+          type="preprocessor"
+          name="preprocessor"
+          output="screen">
+
+      <param name="min_range" value="$(arg min_range)" />
+      <param name="max_range" value="$(arg max_range)" />
+      <param name="lidar_type" value="$(arg lidar_type)" />
+      <param name="scan_lines" value="$(arg scan_lines)" />
+      <param name="scan_regions" value="$(arg scan_regions)" />
+      <param name="edges_per_region" value="$(arg edges_per_region)" />
+      
+      <remap from="~points" to="/kitti/velo/pointcloud" />
+    </node-->
+
+    <!-- Odometer -->
+    <node pkg="lihash_slam"
+          type="odometer"
+          name="odometer"
+          output="screen">
+
+      <param name="min_range" value="$(arg min_range)" />
+      <param name="max_range" value="$(arg max_range)" />
+      <param name="fixed_frame" value="$(arg odom_frame)" />
+      <param name="base_frame" value="$(arg base_frame)" />
+      <param name="lidar_frame" value="$(arg lidar_frame)" />
+      <param name="publish_tf" value="$(arg publish_tf_odom)" />
+      <param name="kf_dist" value="$(arg kf_dist)" />
+      <param name="kf_rot" value="$(arg kf_rot)" />
+      <param name="kf_frames" value="$(arg kf_frames)" />
+      <param name="lmap_frames" value="$(arg lmap_frames)" />
+      
+      <!-- <remap from="~points" to="preprocessor/edges" /> -->
+      <remap from="~points" to="liodom/edges" />
+    </node>
+
+    <!-- Loop Detector -->
+    <node pkg="lihash_slam"
+          type="loop_detector"
+          name="loop_detector"
+          output="screen">
+      
+      <param name="lcd_method" value="$(arg lcd_method)" />
+      <param name="dist_th" value="$(arg dist_th)" />
+      <param name="accum_dist_th" value="$(arg accum_dist_th)" />
+      <param name="score_th" value="$(arg score_th)" />
+      <param name="rings" value="$(arg rings)" />
+      <param name="sectors" value="$(arg sectors)" />
+      <param name="max_dist" value="$(arg max_dist)" />
+      
+      <remap from="~kfs" to="odometer/kfs" />
+    </node>
+
+    <!-- Mapper -->
+    <node pkg="lihash_slam"
+          type="mapper"
+          name="mapper"
+          output="screen">  
+
+      <param name="map_frame" value="$(arg map_frame)" />
+      <param name="odom_frame" value="$(arg odom_frame)" />
+      <param name="cell_xy_size" value="$(arg cell_xy_size)" />
+      <param name="cell_z_size" value="$(arg cell_z_size)" />
+      <param name="cell_resolution" value="$(arg cell_resolution)" />
+      <param name="cell_min_points" value="$(arg cell_min_points)" />
+      <param name="publish_tf" value="$(arg publish_tf_slam)" />
+      <param name="publish_map_period" value="$(arg publish_map_period)" />
+      <param name="results_file" value="$(arg results_file)" />
+      
+      <remap from="~kfs"   to="odometer/kfs" />
+      <remap from="~lc"    to="loop_detector/lc" />
+      <remap from="~k2b"    to="odometer/kf2b" />
+    </node>
+
+  </group>
+
+  <!-- node pkg="tf"
+        type="static_transform_publisher"
+	      name="world2odom"
+	      args="0 0 0 0 0 0 world odom 1000" >
+  </node-->
+
+  <node pkg="tf"
+        type="static_transform_publisher"
+	      name="baselink2laser"
+	      args="0 0 0 0 0 0 base_link laser 40" >
+  </node>
+
+  <group if="$(arg viz)">
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find lihash_slam)/rviz/lihash_slam_kitti.rviz" />
+  </group>
+
+</launch>
