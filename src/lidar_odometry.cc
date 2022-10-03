@@ -498,7 +498,7 @@ void LidarOdometer::publish(const std_msgs::Header& header, const Eigen::Isometr
   odom_pub_.publish(laser_odom_msg);
 
   // Publishing kTb
-  Eigen::Isometry3d kf_2_b = prev_kf_.inverse() * pose;
+  Eigen::Isometry3d kf_2_b = prev_kf_.inverse() * pose * laser_to_base_;
 
   Eigen::Quaterniond q_current_kb(kf_2_b.rotation());
   Eigen::Vector3d t_current_kb = kf_2_b.translation();
