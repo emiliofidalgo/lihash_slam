@@ -53,16 +53,15 @@ bool lc_added;
 std::string map_frame;
 std::string odom_frame;
 bool publish_tf;
+double tf_period;
 
 // ROS
 ros::Publisher map_points_pub;
 ros::Publisher map_kfs_pub;
 ros::Publisher map_cells_pub;
 ros::Publisher map_traj_pub;
-ros::Publisher pose_pub;
 
 // Transforms
-Eigen::Isometry3d kTb;    // Received from odom (in PoseStamped topic)
 Eigen::Isometry3d oTk;    // Received from odom (in KeyframeMessage topic)
 Eigen::Isometry3d mTk;    // Computed by LiHash
 Eigen::Isometry3d mTo;    // Correction computed by SLAM
@@ -409,53 +408,17 @@ void lcClb(const lihash_slam::LoopClosureConstPtr& lc_msg) {
     mTo_tf.setOrigin(tf::Vector3(t_current.x(), t_current.y(), t_current.z()));
     tf::Quaternion q(q_current.x(), q_current.y(), q_current.z(), q_current.w());
     mTo_tf.setRotation(q);
-
-    // Sending the mTo transform
-    //static tf::TransformBroadcaster tf_broadcaster_;
-    //tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, lc_msg->header.stamp, "world", "odom"));
   }
 }
 
-void k2bClb(const geometry_msgs::PoseStampedConstPtr& k2b_msg) {
+void publishTF(const ros::TimerEvent& event) {
 
-  // Creating an isometry
-  Eigen::Quaterniond q_current(k2b_msg->pose.orientation.w,
-                               k2b_msg->pose.orientation.x,
-                               k2b_msg->pose.orientation.y,
-                               k2b_msg->pose.orientation.z);
-  Eigen::Vector3d t_current(k2b_msg->pose.position.x,
-                            k2b_msg->pose.position.y,
-                            k2b_msg->pose.position.z);  
-  kTb.linear() = q_current.toRotationMatrix();
-  kTb.translation() = t_current;
-
-  // Converting the pose regarding the map
-  Eigen::Isometry3d mTb = mTk * kTb;
-
-  // Republishing the pose 
-  Eigen::Quaterniond q_current_m2b(mTb.rotation());
-  Eigen::Vector3d t_current_m2b = mTb.translation();
-
-  // Creating the base message
-  geometry_msgs::PoseWithCovarianceStamped msg;
-  msg.header.frame_id = map_frame;
-  msg.header.stamp = k2b_msg->header.stamp;
-
-  // Filling the pose
-  msg.pose.pose.orientation.x = q_current_m2b.x();
-  msg.pose.pose.orientation.y = q_current_m2b.y();
-  msg.pose.pose.orientation.z = q_current_m2b.z();
-  msg.pose.pose.orientation.w = q_current_m2b.w();
-  msg.pose.pose.position.x = t_current_m2b.x();
-  msg.pose.pose.position.y = t_current_m2b.y();
-  msg.pose.pose.position.z = t_current_m2b.z();
-
-  pose_pub.publish(msg);
+  ros::Time kf_stamp = ros::Time::now() + ros::Duration(tf_period);
 
   // Sending the mTo transform
   if (publish_tf) {
     static tf::TransformBroadcaster tf_broadcaster_;
-    tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, k2b_msg->header.stamp, map_frame, odom_frame));
+    tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, kf_stamp, map_frame, odom_frame));
   }
 }
 
@@ -490,6 +453,9 @@ int main(int argc, char** argv) {
   nh.param("publish_map_period", map_period, 4.0);
   ROS_INFO("Publish Map Period: %.2f", map_period);
 
+  nh.param("publish_tf_period", tf_period, 1.0);
+  ROS_INFO("Publish TF Period: %.2f", tf_period);
+
   // Map frame
   nh.param<std::string>("map_frame", map_frame, "map");
   ROS_INFO("Map frame: %s", map_frame.c_str());
@@ -506,8 +472,7 @@ int main(int argc, char** argv) {
   map = new lihash_slam::Map(cell_xy_size, cell_z_size, resolution, cell_min_points);
   lc_added = false;
 
-  // Initializing transforms
-  kTb = Eigen::Isometry3d::Identity();
+  // Initializing transforms  
   oTk = Eigen::Isometry3d::Identity();
   mTk = Eigen::Isometry3d::Identity();
   mTo = Eigen::Isometry3d::Identity();
@@ -522,18 +487,15 @@ int main(int argc, char** argv) {
   // LCs
   ros::Subscriber lc_sub = nh.subscribe("lc", 100, lcClb);
 
-  // K2B pose
-  ros::Subscriber k2b_sub = nh.subscribe("k2b", 100, k2bClb);
-
   // Publishers
   map_points_pub = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);
   map_kfs_pub    = nh.advertise<visualization_msgs::MarkerArray>("map/keyframes", 120, true);
   map_cells_pub  = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
   map_traj_pub   = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
-  pose_pub       = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose", 120, true);
 
   // Timers  
   ros::Timer pub_timer = nh.createTimer(ros::Duration(map_period), publishMap);
+  ros::Timer tf_timer  = nh.createTimer(ros::Duration(tf_period), publishTF);
 
   // Receiving messages
   ros::spin();
