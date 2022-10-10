@@ -37,6 +37,7 @@
   <arg name="cell_min_points" default="50" />
   <arg name="publish_tf_slam" default="true" />
   <arg name="publish_map_period" default="4.0" />
+  <arg name="viz_kf_size" default="0.4" />
   <arg name="results_file" default="/home/mussol/Desktop/poses.txt" />
 
   <param name="use_sim_time" value="false"/>
@@ -95,6 +96,7 @@
       <param name="cell_min_points" value="$(arg cell_min_points)" />
       <param name="publish_tf" value="$(arg publish_tf_slam)" />
       <param name="publish_map_period" value="$(arg publish_map_period)" />
+      <param name="viz_kf_size" value="$(arg viz_kf_size)" />
       <param name="results_file" value="$(arg results_file)" />
       
       <remap from="~kfs"   to="odometer/kfs" />
