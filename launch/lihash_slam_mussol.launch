@@ -11,8 +11,8 @@
   <arg name="base_frame" default="base_link" />
   <arg name="lidar_frame" default="" />
   <arg name="publish_tf_odom" default="false" />
-  <arg name="kf_dist" default="12.0" />
-  <arg name="kf_rot" default="2.0" />
+  <arg name="kf_dist" default="1.5" />
+  <arg name="kf_rot" default="1.57" />
   <arg name="kf_frames" default="0" />
   <arg name="lmap_frames" default="15" />
   
@@ -21,7 +21,7 @@
   
   <!-- LCD Pose -->
   <arg name="dist_th" default="7.0" />         <!-- 06: 10.0                             -->
-  <arg name="accum_dist_th" default="7.0" />   <!-- 06: 80.0                             -->
+  <arg name="accum_dist_th" default="10.0" />  <!-- 06: 80.0                             -->
   <arg name="score_th" default="1.5" />        <!-- 06: 2.5 for Pose. 1.0: SC, 4.0: Pose -->
 
   <!-- LCD ISC -->
@@ -32,12 +32,12 @@
   <!-- Mapper -->
   <arg name="map_frame" default="map" />
   <arg name="cell_xy_size" default="5.0" />
-  <arg name="cell_z_size" default="5.0" />
-  <arg name="cell_resolution" default="0.4" />
+  <arg name="cell_z_size" default="3.0" />
+  <arg name="cell_resolution" default="0.2" />
   <arg name="cell_min_points" default="50" />
   <arg name="publish_tf_slam" default="true" />
   <arg name="publish_map_period" default="4.0" />
-  <arg name="viz_kf_size" default="0.4" />
+  <arg name="viz_kf_size" default="0.2" />
   <arg name="results_file" default="/home/mussol/Desktop/poses.txt" />
 
   <param name="use_sim_time" value="false"/>
