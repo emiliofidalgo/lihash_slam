@@ -96,7 +96,7 @@ void publishKeyframes() {
     marker_links.id = 1;
     marker_links.type = visualization_msgs::Marker::LINE_STRIP;
     marker_links.action = visualization_msgs::Marker::ADD;
-    marker_links.scale.x = viz_kf_size - 1.0;
+    marker_links.scale.x = std::max(viz_kf_size - 1.0, 0.1);
     marker_links.color.a = 0.5;    
     marker_links.color.b = 1.0;
     marker_links.pose.orientation.w = 1.0;
@@ -109,7 +109,7 @@ void publishKeyframes() {
     marker_loops.id = 2;
     marker_loops.type = visualization_msgs::Marker::LINE_LIST;
     marker_loops.action = visualization_msgs::Marker::ADD;
-    marker_loops.scale.x = viz_kf_size - 1.0;
+    marker_loops.scale.x = std::max(viz_kf_size - 1.0, 0.1);
     marker_loops.color.a = 0.5;    
     marker_loops.color.r = 1.0;
     marker_loops.pose.orientation.w = 1.0;
@@ -216,7 +216,7 @@ void publishMap(const ros::TimerEvent& event) {
     marker_traj.id = 0;
     marker_traj.type = visualization_msgs::Marker::LINE_STRIP;
     marker_traj.action = visualization_msgs::Marker::ADD;
-    marker_traj.scale.x = viz_kf_size - 1.0;
+    marker_traj.scale.x = std::max(viz_kf_size - 1.0, 0.1);
     marker_traj.color.a = 0.5;    
     marker_traj.color.r = 1.0;
     marker_traj.color.g = 1.0;
