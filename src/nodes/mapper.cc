@@ -52,6 +52,10 @@ std::string map_frame;
 std::string odom_frame;
 bool publish_tf;
 double tf_period;
+double cell_xy_size;
+double cell_z_size;
+// Visualization params
+double viz_kf_size;
 
 // ROS
 ros::Publisher map_points_pub;
@@ -77,9 +81,9 @@ void publishKeyframes() {
     marker_kfs.id = 0;
     marker_kfs.type = visualization_msgs::Marker::SPHERE_LIST;
     marker_kfs.action = visualization_msgs::Marker::ADD;
-    marker_kfs.scale.x = 1.25;
-    marker_kfs.scale.y = 1.25;
-    marker_kfs.scale.z = 1.25;
+    marker_kfs.scale.x = viz_kf_size;
+    marker_kfs.scale.y = viz_kf_size;
+    marker_kfs.scale.z = viz_kf_size;
     marker_kfs.color.a = 0.5;
     marker_kfs.color.b = 1.0;
     marker_kfs.pose.orientation.w = 1.0;
@@ -92,7 +96,7 @@ void publishKeyframes() {
     marker_links.id = 1;
     marker_links.type = visualization_msgs::Marker::LINE_STRIP;
     marker_links.action = visualization_msgs::Marker::ADD;
-    marker_links.scale.x = 0.25;
+    marker_links.scale.x = viz_kf_size - 1.0;
     marker_links.color.a = 0.5;    
     marker_links.color.b = 1.0;
     marker_links.pose.orientation.w = 1.0;
@@ -105,7 +109,7 @@ void publishKeyframes() {
     marker_loops.id = 2;
     marker_loops.type = visualization_msgs::Marker::LINE_LIST;
     marker_loops.action = visualization_msgs::Marker::ADD;
-    marker_loops.scale.x = 0.25;
+    marker_loops.scale.x = viz_kf_size - 1.0;
     marker_loops.color.a = 0.5;    
     marker_loops.color.r = 1.0;
     marker_loops.pose.orientation.w = 1.0;
@@ -182,9 +186,9 @@ void publishMap(const ros::TimerEvent& event) {
     marker.id = 0;
     marker.type = visualization_msgs::Marker::CUBE_LIST;
     marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = 20.0;
-    marker.scale.y = 20.0;
-    marker.scale.z = 25.0;
+    marker.scale.x = cell_xy_size;
+    marker.scale.y = cell_xy_size;
+    marker.scale.z = cell_z_size;
     marker.color.a = 0.05;
     marker.color.g = 1.0;
     marker.pose.orientation.w = 1.0;
@@ -212,7 +216,7 @@ void publishMap(const ros::TimerEvent& event) {
     marker_traj.id = 0;
     marker_traj.type = visualization_msgs::Marker::LINE_STRIP;
     marker_traj.action = visualization_msgs::Marker::ADD;
-    marker_traj.scale.x = 0.25;
+    marker_traj.scale.x = viz_kf_size - 1.0;
     marker_traj.color.a = 0.5;    
     marker_traj.color.r = 1.0;
     marker_traj.color.g = 1.0;
@@ -449,11 +453,9 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh("~");
 
   // Getting params  
-  double cell_xy_size;
   nh.param("cell_xy_size", cell_xy_size, 20.0);
   ROS_INFO("Cell XY size: %.2f", cell_xy_size);
 
-  double cell_z_size;
   nh.param("cell_z_size", cell_z_size, 25.0);
   ROS_INFO("Cell Z size: %.2f", cell_z_size);
 
@@ -491,6 +493,9 @@ int main(int argc, char** argv) {
   std::string results_file;
   nh.param<std::string>("results_file", results_file, "/home/emilio/Escritorio/poses.txt");
   ROS_INFO("Results file: %s", results_file.c_str());
+
+  // Reading visualization params
+  nh.param("viz_kf_size", viz_kf_size, 1.25);
 
   // Initializing the map
   map = new lihash_slam::Map(cell_xy_size, cell_z_size, resolution, cell_min_points);

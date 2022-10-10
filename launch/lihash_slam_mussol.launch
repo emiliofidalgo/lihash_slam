@@ -4,7 +4,7 @@
   <arg name="viz" default="false" />
 
   <arg name="min_range" default="3.0" />
-  <arg name="max_range" default="20.0" />
+  <arg name="max_range" default="25.0" />
 
   <!-- Odometer -->  
   <arg name="odom_frame" default="odom" />
@@ -13,16 +13,16 @@
   <arg name="publish_tf_odom" default="false" />
   <arg name="kf_dist" default="12.0" />
   <arg name="kf_rot" default="2.0" />
-  <arg name="kf_frames" default="20" />
+  <arg name="kf_frames" default="0" />
   <arg name="lmap_frames" default="15" />
   
   <!-- Loop Detector -->
   <arg name="lcd_method" default="0" /> <!-- 0: Pose-based, 1: ISC, 2: SC -->
   
   <!-- LCD Pose -->
-  <arg name="dist_th" default="3.0" />         <!-- 06: 10.0                             -->
+  <arg name="dist_th" default="7.0" />         <!-- 06: 10.0                             -->
   <arg name="accum_dist_th" default="7.0" />   <!-- 06: 80.0                             -->
-  <arg name="score_th" default="1.5" />         <!-- 06: 2.5 for Pose. 1.0: SC, 4.0: Pose -->
+  <arg name="score_th" default="1.5" />        <!-- 06: 2.5 for Pose. 1.0: SC, 4.0: Pose -->
 
   <!-- LCD ISC -->
   <arg name="rings" default="60" />
@@ -31,7 +31,7 @@
 
   <!-- Mapper -->
   <arg name="map_frame" default="map" />
-  <arg name="cell_xy_size" default="10.0" />
+  <arg name="cell_xy_size" default="5.0" />
   <arg name="cell_z_size" default="5.0" />
   <arg name="cell_resolution" default="0.4" />
   <arg name="cell_min_points" default="50" />
