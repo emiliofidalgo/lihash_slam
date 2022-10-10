@@ -440,7 +440,7 @@ bool LidarOdometer::isNewKF(const Eigen::Isometry3d& pose) {
   //ROS_INFO("KF Rotation: %.2f", drot);
   //ROS_INFO("KF Frames: %d", acc_frames_);
 
-  if (dtrans > kf_dist_ || drot > kf_rot_ || acc_frames_ > kf_frames_) {
+  if (dtrans > kf_dist_ || drot > kf_rot_ || ((acc_frames_ > kf_frames_) && (kf_frames_ > 0))) {
     return true;
   } else {
     return false;
