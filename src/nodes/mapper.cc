@@ -496,6 +496,7 @@ int main(int argc, char** argv) {
 
   // Reading visualization params
   nh.param("viz_kf_size", viz_kf_size, 1.25);
+  ROS_INFO("RVIZ KF Size: %.2f", viz_kf_size);
 
   // Initializing the map
   map = new lihash_slam::Map(cell_xy_size, cell_z_size, resolution, cell_min_points);
