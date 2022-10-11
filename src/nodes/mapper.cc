@@ -58,7 +58,6 @@ ros::Publisher map_points_pub;
 ros::Publisher map_kfs_pub;
 ros::Publisher map_cells_pub;
 ros::Publisher map_traj_pub;
-ros::Publisher pose_pub;
 
 // Transforms
 Eigen::Isometry3d mTo;    // Correction computed by SLAM
