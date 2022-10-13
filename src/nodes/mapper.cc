@@ -165,6 +165,8 @@ void publishKeyframes() {
 void publishMap(const ros::TimerEvent& event) {
 
   ros::Time time = ros::Time::now();
+
+  publishKeyframes();
   
   // Publishing the current map
   if (map_points_pub.getNumSubscribers() > 0) {
@@ -409,18 +411,27 @@ void optimize(const ros::TimerEvent& event) {
   processKeyframes();
 
   // Inserting new detected LCs
-  int nloops = processLoopClosures();
-
-  // Getting keyframes
-  std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
+  int nloops = processLoopClosures();  
 
   // Optimize the graph is there any new loop closure
   if (nloops > 0) {
-    map->optimize();
+    map->optimize();    
+  }
+}
+
+void publishTF(const ros::TimerEvent& event) {
+  
+  ros::Time kf_stamp = ros::Time::now() + ros::Duration(tf_period);
+
+  // Sending the mTo transform
+  if (publish_tf) {
+
+    // Getting keyframes
+    std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
 
     // Saving the optimized position of the last keyframe    
     Eigen::Isometry3d mTk = kfs->at(kfs->size() - 1)->pose_est;
-    Eigen::Isometry3d oTk = kfs->at(kfs->size() - 1)->pose_odom;    
+    Eigen::Isometry3d oTk = kfs->at(kfs->size() - 1)->pose_odom;
 
     // Computing the correction from map to odom
     mTo = mTk * oTk.inverse();
@@ -430,17 +441,7 @@ void optimize(const ros::TimerEvent& event) {
     mTo_tf.setOrigin(tf::Vector3(t_current.x(), t_current.y(), t_current.z()));
     tf::Quaternion q(q_current.x(), q_current.y(), q_current.z(), q_current.w());
     mTo_tf.setRotation(q);
-  }
-  
-  publishKeyframes();
-}
 
-void publishTF(const ros::TimerEvent& event) {
-  
-  ros::Time kf_stamp = ros::Time::now() + ros::Duration(tf_period);
-
-  // Sending the mTo transform
-  if (publish_tf) {
     static tf::TransformBroadcaster tf_broadcaster_;
     tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, kf_stamp, map_frame, odom_frame));
   }
@@ -479,7 +480,7 @@ int main(int argc, char** argv) {
   ROS_INFO("Publish Map Period: %.2f", map_period);
 
   double optim_period;
-  nh.param("optimize_period", optim_period, 3.0);
+  nh.param("optimize_period", optim_period, 2.0);
   ROS_INFO("Optimization Period: %.2f", optim_period);
 
   // Map frame
@@ -522,8 +523,8 @@ int main(int argc, char** argv) {
 
   // Timers  
   ros::Timer pub_timer = nh.createTimer(ros::Duration(map_period), publishMap);
-  ros::Timer opt_timer = nh.createTimer(ros::Duration(optim_period), optimize);
   ros::Timer tf_timer  = nh.createTimer(ros::Duration(tf_period), publishTF);
+  ros::Timer opt_timer = nh.createTimer(ros::Duration(optim_period), optimize);
 
   // Receiving messages
   ros::spin();
