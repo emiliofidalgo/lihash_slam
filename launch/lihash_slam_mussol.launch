@@ -38,6 +38,7 @@
   <arg name="publish_tf_slam" default="true" />
   <arg name="publish_map_period" default="4.0" />
   <arg name="viz_kf_size" default="0.2" />
+  <arg name="save_results" default="false" />
   <arg name="results_file" default="/home/mussol/Desktop/poses.txt" />
 
   <param name="use_sim_time" value="false"/>
@@ -97,11 +98,11 @@
       <param name="publish_tf" value="$(arg publish_tf_slam)" />
       <param name="publish_map_period" value="$(arg publish_map_period)" />
       <param name="viz_kf_size" value="$(arg viz_kf_size)" />
+      <param name="save_results" value="$(arg save_results)" />
       <param name="results_file" value="$(arg results_file)" />
       
       <remap from="~kfs"   to="odometer/kfs" />
       <remap from="~lc"    to="loop_detector/lc" />
-      <remap from="~k2b"    to="odometer/kf2b" />
     </node>
 
   </group>

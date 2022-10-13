@@ -48,6 +48,7 @@
   <arg name="publish_tf_period" default="1.0" />
   <arg name="publish_map_period" default="4.0" />
   <arg name="optimize_period" default="3.0" />
+  <arg name="save_results" default="false" />
   <arg name="results_file" default="/home/emilio/Escritorio/poses.txt" />
 
   <param name="use_sim_time" value="true"/>
@@ -134,6 +135,7 @@
       <param name="publish_tf_period" value="$(arg publish_tf_period)" />
       <param name="publish_map_period" value="$(arg publish_map_period)" />
       <param name="optimize_period" value="$(arg optimize_period)" />
+      <param name="save_results" value="$(arg save_results)" />
       <param name="results_file" value="$(arg results_file)" />    
       
       <remap from="~kfs"   to="kfmaker/kfs" />

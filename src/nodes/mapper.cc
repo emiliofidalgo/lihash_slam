@@ -54,6 +54,7 @@ bool publish_tf;
 double tf_period;
 double cell_xy_size;
 double cell_z_size;
+bool save_results;
 // Visualization params
 double viz_kf_size;
 
@@ -491,6 +492,10 @@ int main(int argc, char** argv) {
   nh.param<std::string>("odom_frame", odom_frame, "odom");
   ROS_INFO("Odom frame: %s", odom_frame.c_str());
 
+  // Save results
+  nh.param("save_results", save_results, false);
+  ROS_INFO("Save results: %s", save_results ? "Yes" : "No");
+
   std::string results_file;
   nh.param<std::string>("results_file", results_file, "/home/emilio/Escritorio/poses.txt");
   ROS_INFO("Results file: %s", results_file.c_str());
@@ -533,9 +538,11 @@ int main(int argc, char** argv) {
   map->optimize();
 
   // Writing results to a file
-  ROS_INFO("Writing results ...");  
-  writeResults(results_file);
-  ROS_INFO("Done!");
+  if (save_results) {
+    ROS_INFO("Writing results ...");  
+    writeResults(results_file); 
+    ROS_INFO("Done!");
+  }
 
   return 0;
 }
