@@ -430,21 +430,24 @@ void publishTF(const ros::TimerEvent& event) {
     // Getting keyframes
     std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
 
-    // Saving the optimized position of the last keyframe    
-    Eigen::Isometry3d mTk = kfs->at(kfs->size() - 1)->pose_est;
-    Eigen::Isometry3d oTk = kfs->at(kfs->size() - 1)->pose_odom;
+    if (kfs->size() > 0) {
 
-    // Computing the correction from map to odom
-    mTo = mTk * oTk.inverse();
+      // Saving the optimized position of the last keyframe    
+      Eigen::Isometry3d mTk = kfs->at(kfs->size() - 1)->pose_est;
+      Eigen::Isometry3d oTk = kfs->at(kfs->size() - 1)->pose_odom;
 
-    Eigen::Quaterniond q_current(mTo.rotation());
-    Eigen::Vector3d t_current = mTo.translation();
-    mTo_tf.setOrigin(tf::Vector3(t_current.x(), t_current.y(), t_current.z()));
-    tf::Quaternion q(q_current.x(), q_current.y(), q_current.z(), q_current.w());
-    mTo_tf.setRotation(q);
+      // Computing the correction from map to odom
+      mTo = mTk * oTk.inverse();
 
-    static tf::TransformBroadcaster tf_broadcaster_;
-    tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, kf_stamp, map_frame, odom_frame));
+      Eigen::Quaterniond q_current(mTo.rotation());
+      Eigen::Vector3d t_current = mTo.translation();
+      mTo_tf.setOrigin(tf::Vector3(t_current.x(), t_current.y(), t_current.z()));
+      tf::Quaternion q(q_current.x(), q_current.y(), q_current.z(), q_current.w());
+      mTo_tf.setRotation(q);
+
+      static tf::TransformBroadcaster tf_broadcaster_;
+      tf_broadcaster_.sendTransform(tf::StampedTransform(mTo_tf, kf_stamp, map_frame, odom_frame));
+    }
   }
 }
 
