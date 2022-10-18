@@ -63,10 +63,14 @@ Visualization Manager:
           Value: true
         base_link_hori:
           Value: false
+        cam0:
+          Value: true
         camera_link:
           Value: false
         global:
           Value: false
+        imu:
+          Value: true
         map:
           Value: true
         odom:
@@ -97,7 +101,9 @@ Visualization Manager:
                 os_lidar:
                   {}
             global:
-              {}
+              imu:
+                cam0:
+                  {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -421,7 +427,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 252; 233; 79
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -440,13 +446,13 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /mars_dji_node/core_path_state_out
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 1
       Axes Length: 0.5
       Axes Radius: 0.05000000074505806
       Class: rviz/Pose
       Color: 138; 226; 52
-      Enabled: true
+      Enabled: false
       Head Length: 0.05000000074505806
       Head Radius: 0.10000000149011612
       Name: MARS_pose
@@ -456,7 +462,7 @@ Visualization Manager:
       Shape: Arrow
       Topic: /mars_dji_node/pose_state_out
       Unreliable: false
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: false
       Marker Topic: /occupied_cells_vis_array
@@ -466,13 +472,13 @@ Visualization Manager:
       Queue Size: 100
       Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /lihash_slam/mapper/map/cells
       Name: SLAM - Cells
       Namespaces:
-        cells: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /lihash_slam/mapper/map/keyframes
@@ -493,7 +499,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
@@ -508,7 +514,7 @@ Visualization Manager:
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /lihash_slam/mapper/map/trajectory
@@ -545,7 +551,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 24.711368560791016
+      Distance: 16.083438873291016
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -553,17 +559,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.18962730467319489
-        Y: -0.36179280281066895
-        Z: -0.5043462514877319
+        X: -0.4706079661846161
+        Y: 0.016472266986966133
+        Z: -0.33578455448150635
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5147972106933594
+      Pitch: 1.5597962141036987
       Target Frame: <Fixed Frame>
-      Yaw: 3.26051926612854
+      Yaw: 4.710532188415527
     Saved: ~
 Window Geometry:
   Displays:

@@ -7,21 +7,21 @@
   <arg name="max_range" default="75.0" />
 
   <!-- Keyframe Maker -->
-  <arg name="kf_dist" default="1.5" />
-  <arg name="kf_rot" default="1.57" />
+  <arg name="kf_dist" default="0.75" />
+  <arg name="kf_rot" default="1.0" />
   <arg name="kf_frames" default="0" />
   <arg name="odom_frame" default="odom" />
   <arg name="base_frame" default="base_link" />
   <arg name="lidar_frame" default="" />
-  <arg name="publish_tf_kfmaker" default="true" />
+  <arg name="publish_tf_kfmaker" default="false" />
   
   <!-- Loop Detector -->
   <arg name="lcd_method" default="0" />        <!-- 0: Pose-based, 1: ISC, 2: SC -->
   
   <!-- LCD Pose -->
-  <arg name="dist_th" default="7.0" />         <!-- 06: 10.0                             -->
-  <arg name="accum_dist_th" default="10.0" />  <!-- 06: 80.0                             -->
-  <arg name="score_th" default="1.5" />        <!-- 06: 2.5 for Pose. 1.0: SC, 4.0: Pose -->
+  <arg name="dist_th" default="3.0" />          <!-- 7                             -->
+  <arg name="accum_dist_th" default="5.0" />    <!-- 25                            -->
+  <arg name="score_th" default="0.5" />         <!-- 0.5                           -->
 
   <!-- LCD ISC -->
   <arg name="rings" default="60" />
