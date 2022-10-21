@@ -28,7 +28,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: SLAM - Points
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -63,14 +63,10 @@ Visualization Manager:
           Value: true
         base_link_hori:
           Value: false
-        cam0:
-          Value: true
         camera_link:
           Value: false
         global:
           Value: false
-        imu:
-          Value: true
         map:
           Value: true
         odom:
@@ -89,6 +85,8 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
+          global:
+            {}
           odom:
             base_link:
               base_link_hori:
@@ -99,10 +97,6 @@ Visualization Manager:
                 os_imu:
                   {}
                 os_lidar:
-                  {}
-            global:
-              imu:
-                cam0:
                   {}
       Update Interval: 0
       Value: true
@@ -484,7 +478,7 @@ Visualization Manager:
       Marker Topic: /lihash_slam/mapper/map/keyframes
       Name: SLAM - Keyframes
       Namespaces:
-        kfs: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -520,7 +514,7 @@ Visualization Manager:
       Marker Topic: /lihash_slam/mapper/map/trajectory
       Name: SLAM - Trajectory
       Namespaces:
-        traj: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -551,7 +545,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 16.083438873291016
+      Distance: 11.89240837097168
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -567,9 +561,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5597962141036987
+      Pitch: 0.9897969961166382
       Target Frame: <Fixed Frame>
-      Yaw: 4.710532188415527
+      Yaw: 3.1405282020568848
     Saved: ~
 Window Geometry:
   Displays:
