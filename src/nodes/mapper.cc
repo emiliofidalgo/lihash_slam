@@ -24,6 +24,7 @@
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>
+#include <nav_msgs/Path.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -63,6 +64,7 @@ ros::Publisher map_points_pub;
 ros::Publisher map_kfs_pub;
 ros::Publisher map_cells_pub;
 ros::Publisher map_traj_pub;
+ros::Publisher map_traj_path_pub;
 
 // Transforms
 Eigen::Isometry3d mTo;    // Correction computed by SLAM
@@ -154,7 +156,7 @@ void publishKeyframes() {
     // Marker array
     visualization_msgs::MarkerArray markers;
     markers.markers.push_back(marker_kfs);
-    markers.markers.push_back(marker_links);
+    //markers.markers.push_back(marker_links);
     if (marker_loops.points.size() > 0) {
       markers.markers.push_back(marker_loops);
     }
@@ -257,6 +259,49 @@ void publishMap(const ros::TimerEvent& event) {
     }
 
     map_traj_pub.publish(marker_traj);
+  }
+
+  if (map_traj_path_pub.getNumSubscribers()) {
+
+    // Fill a nav_msgs path message in ROS
+    nav_msgs::Path path;
+    path.header.frame_id = map_frame;
+    path.header.stamp = time;
+
+    std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
+    for (size_t i = 0; i < kfs->size(); i++) {
+      // Getting the KF pose
+      Eigen::Isometry3d pose = kfs->at(i)->pose_est;
+
+      // Adding the pose to the list
+      geometry_msgs::Point kf_p;
+      kf_p.x = pose.translation().x();
+      kf_p.y = pose.translation().y();
+      kf_p.z = pose.translation().z();
+      geometry_msgs::PoseStamped pose_stamped;
+      pose_stamped.pose.position = kf_p;
+      path.poses.push_back(pose_stamped);
+
+      // Iterating through each frame
+      for (size_t j = 0; j < kfs->at(i)->frame_poses.size(); j++) {
+        // Get the frame pose
+        Eigen::Isometry3d frame_pose = kfs->at(i)->frame_poses[j];
+
+        // Transform the frame pose
+        Eigen::Isometry3d corr_pose = pose * frame_pose;
+
+        // Adding the pose to the list
+        geometry_msgs::Point kf_p;
+        kf_p.x = corr_pose.translation().x();
+        kf_p.y = corr_pose.translation().y();
+        kf_p.z = corr_pose.translation().z();
+        geometry_msgs::PoseStamped pose_stamped;
+        pose_stamped.pose.position = kf_p;
+        path.poses.push_back(pose_stamped);
+      }
+    }
+
+    map_traj_path_pub.publish(path);
   }
 }
 
@@ -524,10 +569,11 @@ int main(int argc, char** argv) {
   ros::Subscriber lc_sub = nh.subscribe("lc", 100, lcClb);
 
   // Publishers
-  map_points_pub = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);
-  map_kfs_pub    = nh.advertise<visualization_msgs::MarkerArray>("map/keyframes", 120, true);
-  map_cells_pub  = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
-  map_traj_pub   = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
+  map_points_pub    = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);
+  map_kfs_pub       = nh.advertise<visualization_msgs::MarkerArray>("map/keyframes", 120, true);
+  map_cells_pub     = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
+  map_traj_pub      = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
+  map_traj_path_pub = nh.advertise<nav_msgs::Path>("map/trajectory_path", 120, true);
 
   // Timers  
   ros::Timer pub_timer = nh.createTimer(ros::Duration(map_period), publishMap);

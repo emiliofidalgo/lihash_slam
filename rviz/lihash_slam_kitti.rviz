@@ -24,7 +24,7 @@ Panels:
   - Class: rviz/Time
     Name: Time
     SyncMode: 0
-    SyncSource: Edges
+    SyncSource: ""
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -280,12 +280,36 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /lihash_slam/mapper/map/trajectory
       Name: Map - Traj
       Namespaces:
-        traj: true
+        {}
       Queue Size: 100
+      Value: false
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 196; 160; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /lihash_slam/mapper/map/trajectory_path
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:
@@ -315,7 +339,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 162.51937866210938
+      Distance: 216.249755859375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -323,17 +347,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 79.72701263427734
-        Y: -178.1030731201172
-        Z: 57.19656753540039
+        X: 75.12799072265625
+        Y: -125.68183898925781
+        Z: 41.0093879699707
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6897971630096436
+      Pitch: 0.6897972822189331
       Target Frame: <Fixed Frame>
-      Yaw: 4.133618354797363
+      Yaw: 3.8136229515075684
     Saved: ~
 Window Geometry:
   Displays:
