@@ -49,7 +49,7 @@
   <arg name="publish_map_period" default="4.0" />
   <arg name="optimize_period" default="3.0" />
   <arg name="save_results" default="true" />
-  <arg name="results_file" default="/home/emilio/Escritorio/poses.txt" />
+  <arg name="results_dir" default="/home/emilio/Escritorio/slam_results/" />
 
   <param name="use_sim_time" value="true"/>
 
@@ -138,7 +138,7 @@
       <param name="publish_map_period" value="$(arg publish_map_period)" />
       <param name="optimize_period" value="$(arg optimize_period)" />
       <param name="save_results" value="$(arg save_results)" />
-      <param name="results_file" value="$(arg results_file)" />
+      <param name="results_dir" value="$(arg results_dir)" />
       
       <remap from="~kfs"   to="kfmaker/kfs" />
       <remap from="~lc"    to="loop_detector/lc" />

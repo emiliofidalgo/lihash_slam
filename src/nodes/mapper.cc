@@ -34,6 +34,7 @@
 // PCL
 #include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/io/pcd_io.h>
 
 // LiHash SLAM
 #include <lihash_slam/defs.h>
@@ -305,16 +306,19 @@ void publishMap(const ros::TimerEvent& event) {
   }
 }
 
-void writeResults(const std::string& results_file) {
+void writeResults(const std::string& results_dir) {
+
+  // --- POSES ---
 
   // Getting corrected poses
-  std::vector<Eigen::Matrix4d> poses;
+  std::vector<Eigen::Isometry3d> poses;
+
   std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
   for (size_t i = 0; i < kfs->size(); i++) {
     // Getting the KF pose
     Eigen::Isometry3d pose_iso = kfs->at(i)->pose_est;
-    Eigen::Matrix4d pose = kfs->at(i)->pose_est.matrix();
-    poses.push_back(pose);
+    //Eigen::Matrix4d pose = kfs->at(i)->pose_est.matrix();
+    poses.push_back(pose_iso);
 
     // Iterating through each frame
     for (size_t j = 0; j < kfs->at(i)->frame_poses.size(); j++) {
@@ -325,18 +329,22 @@ void writeResults(const std::string& results_file) {
       Eigen::Isometry3d corr_pose = pose_iso * frame_pose;
 
       // Adding the pose to the list
-      poses.push_back(corr_pose.matrix());
+      poses.push_back(corr_pose);
     }
   }
 
-  // Writing poses
+  // Writing poses in KITTI format
+  std::string poses_filename = results_dir + "poses_kitti.txt";
   std::ofstream poses_file;
-  poses_file.open(results_file.c_str(), std::ios::out | std::ios::trunc);
+  poses_file.open(poses_filename.c_str(), std::ios::out | std::ios::trunc);
 
   for (size_t pose_ind = 0; pose_ind < poses.size(); pose_ind++) {
+
+    Eigen::Matrix4d pose = poses[pose_ind].matrix();
+
     for (int i = 0; i < 3; i++) { // Rows
       for (int j = 0; j < 4; j++) { // Cols
-        poses_file << poses[pose_ind](i, j);
+        poses_file << pose(i, j);
 
         if (j != 3) {
           poses_file << " ";
@@ -350,6 +358,17 @@ void writeResults(const std::string& results_file) {
       }
     }
   }  
+
+  // --- MAPS ---
+
+  // Saving Point Cloud
+  std::string edge_map_filename = results_dir + "edge_map.pcd";
+  lihash_slam::PointCloud::Ptr m = map->getMapPoints();
+  pcl::io::savePCDFileASCII (edge_map_filename, *m);
+
+  // Convert the PCD file to a PLY file
+  std::string command = "pcl_pcd2ply " + edge_map_filename + " " + results_dir + "edge_map.ply";
+  system(command.c_str());
 }
 
 int processKeyframes() {
@@ -544,9 +563,9 @@ int main(int argc, char** argv) {
   nh.param("save_results", save_results, false);
   ROS_INFO("Save results: %s", save_results ? "Yes" : "No");
 
-  std::string results_file;
-  nh.param<std::string>("results_file", results_file, "/home/emilio/Escritorio/poses.txt");
-  ROS_INFO("Results file: %s", results_file.c_str());
+  std::string results_dir;
+  nh.param<std::string>("results_dir", results_dir, "/home/emilio/Escritorio/slam_results/");
+  ROS_INFO("Results Directory: %s", results_dir.c_str());
 
   // Reading visualization params
   nh.param("viz_kf_size", viz_kf_size, 1.25);
@@ -589,7 +608,7 @@ int main(int argc, char** argv) {
   // Writing results to a file
   if (save_results) {
     ROS_INFO("Writing results ...");  
-    writeResults(results_file); 
+    writeResults(results_dir);
     ROS_INFO("Done!");
   }
 

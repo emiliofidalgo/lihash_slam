@@ -39,7 +39,7 @@
   <arg name="optimize_period" default="2.0" />
   <arg name="viz_kf_size" default="0.2" />
   <arg name="save_results" default="false" />
-  <arg name="results_file" default="/home/mussol/Desktop/poses.txt" />
+  <arg name="results_dir" default="/home/mussol/Desktop/slam/" />
 
   <param name="use_sim_time" value="false"/>
 
@@ -98,7 +98,7 @@
       <param name="optimize_period" value="$(arg optimize_period)" />
       <param name="viz_kf_size" value="$(arg viz_kf_size)" />
       <param name="save_results" value="$(arg save_results)" />
-      <param name="results_file" value="$(arg results_file)" />
+      <param name="results_dir" value="$(arg results_dir)" />
       
       <remap from="~kfs"   to="kfmaker/kfs" />
       <remap from="~lc"    to="loop_detector/lc" />
