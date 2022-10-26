@@ -106,6 +106,7 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
     // Initializing the points in base coordinates
     *kf_points_ += *edges_base;
     kf_rel_poses_.clear();
+    kf_rel_stamps_.clear();
 
     publish(header, pose);
 
@@ -129,6 +130,7 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
       // Accumulate the current pose wrt the KF
       Eigen::Isometry3d Tkb = curr_kf_.inverse() * pose;
       kf_rel_poses_.push_back(Tkb);
+      kf_rel_stamps_.push_back(header.stamp.toNSec());
 
       // Publishing poses
       publish(header, pose);
@@ -190,6 +192,7 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
 
         // Adding this relative pose
         kf_msg.rel_poses.push_back(rel_pose);
+        kf_msg.rel_stamps.push_back(kf_rel_stamps_[i]);
       }
 
       // Publish the message
@@ -218,7 +221,8 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
 
       // Cleaning up the relative poses
       kf_rel_poses_.clear();
-    }    
+      kf_rel_stamps_.clear();
+    }
   }  
 }
 

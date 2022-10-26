@@ -46,7 +46,7 @@ Keyframe::~Keyframe() {
   points->clear();
 }
 
-void Keyframe::addFramePoses(const std::vector<geometry_msgs::Pose>& rel_poses) {
+void Keyframe::addFramePoses(const std::vector<geometry_msgs::Pose>& rel_poses, const std::vector<uint64_t>& stamps) {
   frame_poses.clear();
   for (size_t i = 0; i < rel_poses.size(); i++) {
     // Creating an isometry
@@ -62,7 +62,8 @@ void Keyframe::addFramePoses(const std::vector<geometry_msgs::Pose>& rel_poses) 
     pose.linear() = q_current.toRotationMatrix();
     pose.translation() = t_current;
 
-    frame_poses.push_back(pose);        
+    frame_poses.push_back(pose);
+    frame_stamps.push_back(stamps[i]);
   }
 }
 

@@ -42,7 +42,7 @@ class Keyframe {
   explicit Keyframe(const int id_, Eigen::Isometry3d& pose_, const PointCloud::Ptr& pc_);
   virtual ~Keyframe();
 
-  void addFramePoses(const std::vector<geometry_msgs::Pose>& rel_poses);
+  void addFramePoses(const std::vector<geometry_msgs::Pose>& rel_poses, const std::vector<uint64_t>& stamps);
  
   int id;
   Eigen::Isometry3d pose_est;   // Pose estimated
@@ -51,7 +51,8 @@ class Keyframe {
   g2o::VertexSE3* node;
   ros::Time stamp_;
   std::vector<int> loops;
-  std::vector<Eigen::Isometry3d> frame_poses;  
+  std::vector<Eigen::Isometry3d> frame_poses;
+  std::vector<uint64_t> frame_stamps;
 };
 
 }  // namespace lihash_slam

@@ -77,6 +77,7 @@ class KeyframeMaker {
   Eigen::Isometry3d base_to_laser_;
   PointCloud::Ptr kf_points_;
   std::vector<Eigen::Isometry3d> kf_rel_poses_;
+  std::vector<uint64_t> kf_rel_stamps_;
 
   // Params  
   std::string fixed_frame_;

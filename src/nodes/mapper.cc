@@ -312,6 +312,7 @@ void writeResults(const std::string& results_dir) {
 
   // Getting corrected poses
   std::vector<Eigen::Isometry3d> poses;
+  std::vector<uint64_t> times;
 
   std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
   for (size_t i = 0; i < kfs->size(); i++) {
@@ -319,6 +320,7 @@ void writeResults(const std::string& results_dir) {
     Eigen::Isometry3d pose_iso = kfs->at(i)->pose_est;
     //Eigen::Matrix4d pose = kfs->at(i)->pose_est.matrix();
     poses.push_back(pose_iso);
+    times.push_back(kfs->at(i)->stamp_.toNSec());
 
     // Iterating through each frame
     for (size_t j = 0; j < kfs->at(i)->frame_poses.size(); j++) {
@@ -330,14 +332,15 @@ void writeResults(const std::string& results_dir) {
 
       // Adding the pose to the list
       poses.push_back(corr_pose);
+      times.push_back(kfs->at(i)->frame_stamps[j]);
     }
   }
 
   // Writing poses in KITTI format
   std::string poses_filename = results_dir + "poses_kitti.txt";
   std::ofstream poses_file;
+  
   poses_file.open(poses_filename.c_str(), std::ios::out | std::ios::trunc);
-
   for (size_t pose_ind = 0; pose_ind < poses.size(); pose_ind++) {
 
     Eigen::Matrix4d pose = poses[pose_ind].matrix();
@@ -357,7 +360,22 @@ void writeResults(const std::string& results_dir) {
         poses_file << " ";
       }
     }
-  }  
+  }
+  poses_file.close();
+
+  // Write poses in TUM format
+  poses_filename = results_dir + "poses_tum.txt";
+  poses_file.open(poses_filename.c_str(), std::ios::out | std::ios::trunc);
+  for (size_t pose_ind = 0; pose_ind < poses.size(); pose_ind++) {
+
+    Eigen::Matrix4d pose = poses[pose_ind].matrix();
+    Eigen::Matrix3d rotation = pose.block(0, 0, 3, 3);
+    Eigen::Quaterniond q(rotation);
+    Eigen::Vector3d translation = pose.block(0, 3, 3, 1);
+
+    poses_file << times[pose_ind] << " " << " " << translation.x() << " " << translation.y() << " " << translation.z() << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
+  }
+  poses_file.close();
 
   // --- MAPS ---
 
@@ -460,7 +478,7 @@ void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
                                 pc_new);
   kf->pose_odom = pose_odom;
   kf->stamp_ = kf_msg->header.stamp;
-  kf->addFramePoses(kf_msg->rel_poses);
+  kf->addFramePoses(kf_msg->rel_poses, kf_msg->rel_stamps);
 
   queue_kfs.push_back(kf);
 }
