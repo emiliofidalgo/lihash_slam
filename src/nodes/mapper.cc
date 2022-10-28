@@ -373,7 +373,7 @@ void writeResults(const std::string& results_dir) {
     Eigen::Quaterniond q(rotation);
     Eigen::Vector3d translation = pose.block(0, 3, 3, 1);
 
-    poses_file << times[pose_ind] << " " << " " << translation.x() << " " << translation.y() << " " << translation.z() << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
+    poses_file << times[pose_ind] << " " << translation.x() << " " << translation.y() << " " << translation.z() << " " << q.x() << " " << q.y() << " " << q.z() << " " << q.w() << std::endl;
   }
   poses_file.close();
 
