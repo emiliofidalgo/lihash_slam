@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="viz" default="true" />
+  
+  <arg name="pose_filename" default="/home/emilio/Escritorio/slam_results/poses_tum.txt" />
+  <arg name="point_cloud_dir" default="/home/emilio/Escritorio/slam_results/pcds/" />
+  <arg name="output_dir" default="/home/emilio/Escritorio/slam_results/reconstruction/" />
+  <arg name="voxel_grid_size" default="0.6" />
+  <arg name="voxel_grid_every_n_frames" default="3" />
+
+  <group ns="lihash_slam">
+
+    <!-- Keyframe Maker -->
+    <node pkg="lihash_slam"
+      type="reconstruct"
+      name="reconstruct"
+      output="screen"
+      respawn="false">
+
+      <param name="pose_filename" value="$(arg pose_filename)" />
+      <param name="point_cloud_dir" value="$(arg point_cloud_dir)" />
+      <param name="output_dir" value="$(arg output_dir)" />
+      <param name="voxel_grid_size" value="$(arg voxel_grid_size)" />
+      <param name="voxel_grid_every_n_frames" value="$(arg voxel_grid_every_n_frames)" />
+
+    </node>
+
+  </group>
+
+  <group if="$(arg viz)">
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find lihash_slam)/rviz/lihash_slam_reconstruct.rviz" />
+  </group>
+
+</launch>

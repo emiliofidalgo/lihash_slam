@@ -129,3 +129,11 @@ target_link_libraries(mapper
     ${PCL_LIBRARIES}
     ${G2O_LIBRARIES}    
 )
+
+#### Reconstruction Node
+add_executable(reconstruct    
+    src/nodes/reconstruct.cc)
+target_link_libraries(reconstruct
+    ${catkin_LIBRARIES}
+    ${PCL_LIBRARIES}    
+)
