@@ -35,6 +35,7 @@
 #include <pcl/common/transforms.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/ply_io.h>
 
 // LiHash SLAM
 #include <lihash_slam/defs.h>
@@ -382,11 +383,11 @@ void writeResults(const std::string& results_dir) {
   // Saving Point Cloud
   std::string edge_map_filename = results_dir + "edge_map.pcd";
   lihash_slam::PointCloud::Ptr m = map->getMapPoints();
-  pcl::io::savePCDFileASCII (edge_map_filename, *m);
+  pcl::io::savePCDFile(edge_map_filename, *m, true);
 
-  // Convert the PCD file to a PLY file
-  std::string command = "pcl_pcd2ply " + edge_map_filename + " " + results_dir + "edge_map.ply";
-  system(command.c_str());
+  // Saving Point Cloud in PLY format
+  std::string edge_map_filename_ply = results_dir + "edge_map.ply";
+  pcl::io::savePLYFile(edge_map_filename_ply, *m, true);
 }
 
 int processKeyframes() {
