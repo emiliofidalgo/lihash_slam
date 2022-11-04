@@ -175,12 +175,12 @@ int main(int argc, char** argv) {
 
       // Write the number of processed files from the total by console
       files_processed++;
-      std::cout << "Files: " << files_processed << " / " << num_pcd << " -- Points: " << reconstructed->size() << std::endl;
+      std::cout << "\r Files: " << files_processed << " / " << num_pcd << " -- Points: " << reconstructed->size() << std::flush;
     }    
   }
 
   // Print the number of points in the reconstructed point cloud
-  std::cout << "Number of points in the reconstructed point cloud: " << reconstructed->size() << std::endl;
+  std::cout << "\nNumber of points in the reconstructed point cloud: " << reconstructed->size() << std::endl;
 
   // Save the reconstructed point cloud
   std::string transformed_pcd_filename = output_dir + "reconstruction.pcd";
