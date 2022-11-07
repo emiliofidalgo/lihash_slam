@@ -16,11 +16,11 @@
   <arg name="publish_tf_kfmaker" default="false" />
   
   <!-- Loop Detector -->
-  <arg name="lcd_method" default="0" />        <!-- 0: Pose-based, 1: ISC, 2: SC -->
+  <arg name="lcd_method" default="0" />         <!-- 0: Pose-based, 1: ISC, 2: SC -->
   
   <!-- LCD Pose -->
-  <arg name="dist_th" default="3.0" />          <!-- 7                             -->
-  <arg name="accum_dist_th" default="5.0" />    <!-- 25                            -->
+  <arg name="dist_th" default="2.0" />          <!-- 7                             -->
+  <arg name="accum_dist_th" default="15.0" />   <!-- 25                            -->
   <arg name="score_th" default="0.5" />         <!-- 0.5                           -->
 
   <!-- LCD ISC -->
