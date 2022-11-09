@@ -38,8 +38,8 @@
   <arg name="publish_map_period" default="4.0" />
   <arg name="optimize_period" default="2.0" />
   <arg name="viz_kf_size" default="0.2" />
-  <arg name="save_results" default="false" />
-  <arg name="results_dir" default="/home/mussol/Desktop/slam/" />
+  <arg name="save_results" default="true" />
+  <arg name="results_dir" default="/home/mussol/slam/" />
 
   <param name="use_sim_time" value="false"/>
 
