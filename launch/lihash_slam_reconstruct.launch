@@ -3,9 +3,7 @@
 
   <arg name="viz" default="true" />
   
-  <arg name="pose_filename" default="/home/emilio/Escritorio/slam_results/poses_tum.txt" />
-  <arg name="point_cloud_dir" default="/home/emilio/Escritorio/slam_results/pcds/" />
-  <arg name="output_dir" default="/home/emilio/Escritorio/slam_results/reconstruction/" />
+  <arg name="input_dir" default="/home/emilio/Escritorio/slam_results/" />
   <arg name="voxel_grid_size" default="0.6" />
   <arg name="voxel_grid_every_n_frames" default="3" />
 
@@ -17,10 +15,7 @@
       name="reconstruct"
       output="screen"
       respawn="false">
-
-      <param name="pose_filename" value="$(arg pose_filename)" />
-      <param name="point_cloud_dir" value="$(arg point_cloud_dir)" />
-      <param name="output_dir" value="$(arg output_dir)" />
+      <param name="input_dir" value="$(arg input_dir)" />
       <param name="voxel_grid_size" value="$(arg voxel_grid_size)" />
       <param name="voxel_grid_every_n_frames" value="$(arg voxel_grid_every_n_frames)" />
 

@@ -49,17 +49,23 @@ int main(int argc, char** argv) {
   ros::Publisher pub_path = nh.advertise<nav_msgs::Path>("path", 1);
 
   // Read parameters
-  // Pose file
-  std::string pose_filename;
-  nh.param<std::string>("pose_filename", pose_filename, "");
-
-  // Point cloud directory
-  std::string point_cloud_dir;
-  nh.param<std::string>("point_cloud_dir", point_cloud_dir, "");
 
   // Output directory
-  std::string output_dir;
-  nh.param<std::string>("output_dir", output_dir, "");
+  std::string input_dir;
+  nh.param<std::string>("input_dir", input_dir, "");
+
+  // Pose file
+  std::string pose_filename = input_dir + "/poses_tum.txt";
+
+  // Point cloud directory
+  std::string point_cloud_dir = input_dir + "/pcds";
+
+  // Output directory
+  std::string output_dir = input_dir + "/recons/";
+
+  // Remove output directory if it exists and create it again
+  boost::filesystem::remove_all(output_dir);
+  boost::filesystem::create_directory(output_dir);
 
   // Voxel grid size
   double voxel_grid_size;
