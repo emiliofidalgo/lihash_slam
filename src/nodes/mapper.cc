@@ -586,6 +586,21 @@ int main(int argc, char** argv) {
   nh.param<std::string>("results_dir", results_dir, "/home/emilio/Escritorio/slam_results/");
   ROS_INFO("Results Directory: %s", results_dir.c_str());
 
+  // Define results directory to the current date and time
+
+  std::time_t t = std::time(0);   // get time now
+
+  std::tm* now = std::localtime(&t);
+  std::stringstream ss;
+  ss << (now->tm_year + 1900) 
+     << std::setw(2) << std::setfill('0') << (now->tm_mon + 1)
+     << std::setw(2) << std::setfill('0') << now->tm_mday << "/"
+     << std::setw(2) << std::setfill('0') << now->tm_hour << "_"
+     << std::setw(2) << std::setfill('0') << now->tm_min << "_"
+     << std::setw(2) << std::setfill('0') << now->tm_sec;
+  results_dir += ss.str() + "/";
+  boost::filesystem::create_directories(results_dir);
+
   // Reading visualization params
   nh.param("viz_kf_size", viz_kf_size, 1.25);
   ROS_INFO("RVIZ KF Size: %.2f", viz_kf_size);
