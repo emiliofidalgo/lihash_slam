@@ -4,8 +4,8 @@
   <arg name="viz" default="true" />
   
   <arg name="input_dir" default="/home/emilio/Escritorio/slam_results/" />
-  <arg name="voxel_grid_size" default="0.6" />
-  <arg name="voxel_grid_every_n_frames" default="3" />
+  <arg name="voxel_grid_size" default="0.2" />
+  <arg name="voxel_grid_every_n_frames" default="1" />
 
   <group ns="lihash_slam">
 
