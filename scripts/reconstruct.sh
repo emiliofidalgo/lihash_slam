@@ -3,13 +3,13 @@
 # This script is used to generate a reconstruction from the output of the SLAM system.
 
 # Variables
-CURRENT_DIR=$1
+POSE_DIR=$1
 BAG_DIR=$2
-PCD_DIR="$CURRENT_DIR/pcds/"
+PCD_DIR="$POSE_DIR/pcds/"
 
 # Starting reconstruction
 echo "Starting reconstruction"
-echo "SLAM Directory: $CURRENT_DIR"
+echo "SLAM Directory: $POSE_DIR"
 echo "Bag Directory: $BAG_DIR"
 
 # Check if the pcds directory exists
@@ -22,4 +22,4 @@ fi
 
 # Calling the reconstruction script
 echo "Performing the reconstruction ..."
-roslaunch lihash_slam lihash_slam_reconstruct.launch input_dir:=$CURRENT_DIR
+roslaunch lihash_slam lihash_slam_reconstruct.launch input_dir:=$POSE_DIR
