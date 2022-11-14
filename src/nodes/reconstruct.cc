@@ -165,9 +165,18 @@ int main(int argc, char** argv) {
         }
       }
 
+      // Filter point cloud by distance
+      lihash_slam::PointCloud::Ptr filtered(new lihash_slam::PointCloud);
+      for (size_t i = 0; i < cloud->points.size(); i++) {
+        double dist = std::sqrt(cloud->points[i].x * cloud->points[i].x + cloud->points[i].y * cloud->points[i].y + cloud->points[i].z * cloud->points[i].z);
+        if (dist > 0.7) {
+          filtered->points.push_back(cloud->points[i]);
+        }
+      }
+
       // Transform the point cloud
       lihash_slam::PointCloud::Ptr transformed_cloud(new lihash_slam::PointCloud);
-      pcl::transformPointCloud(*cloud, *transformed_cloud, poses[best_pose].matrix());
+      pcl::transformPointCloud(*filtered, *transformed_cloud, poses[best_pose].matrix());
 
       *reconstructed += *transformed_cloud;
 
