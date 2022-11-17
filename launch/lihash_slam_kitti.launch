@@ -141,6 +141,7 @@
       <param name="results_dir" value="$(arg results_dir)" />
       
       <remap from="~kfs"   to="kfmaker/kfs" />
+      <remap from="~k2b"   to="kfmaker/k2b" />
       <remap from="~lc"    to="loop_detector/lc" />
     </node>
 

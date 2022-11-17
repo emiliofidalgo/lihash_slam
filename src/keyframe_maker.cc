@@ -29,7 +29,8 @@ KeyframeMaker::KeyframeMaker(const ros::NodeHandle& nh) :
   prev_stamp_(0.0),
   kf_stamp_(0.0),
   acc_frames_(0),
-  kf_points_(new PointCloud) {
+  kf_points_(new PointCloud),
+  curr_kf_id_(0) {
 
     readParams();
 
@@ -145,7 +146,11 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
 
       // Creating the base message
       lihash_slam::KeyframeMessage kf_msg;
-      kf_msg.header.frame_id = "prev_keyframe";
+      // Set frame id according to the curr_kf_id_ using 5 digits
+      std::stringstream ss;
+      ss << "kf_" << std::setfill('0') << std::setw(7) << curr_kf_id_;
+      kf_msg.header.frame_id = ss.str();
+      // kf_msg.header.frame_id = "prev_keyframe";
       kf_msg.header.stamp.fromSec(kf_stamp_);
 
       // Filling the pose (relative) 
@@ -200,10 +205,13 @@ void KeyframeMaker::process(const std_msgs::Header& header, const Eigen::Isometr
 
       // Create a new KF
       prev_kf_ = curr_kf_;
-      curr_kf_ = pose;
+      curr_kf_ = pose;   
+
+      // Update the current keyframe id
+      curr_kf_id_++;   
 
       // Publishing poses
-      publish(header, pose);
+      publish(header, pose);      
       
       // Cleaning up the points
       kf_points_->clear();
@@ -271,9 +279,9 @@ bool KeyframeMaker::isNewKF(const Eigen::Isometry3d& pose) {
 
 void KeyframeMaker::publish(const std_msgs::Header& header, const Eigen::Isometry3d& pose) {
 
-  // Publishing oTk
-  Eigen::Quaterniond q_current_ok(curr_kf_.rotation());
-  Eigen::Vector3d t_current_ok = curr_kf_.translation();
+  // Publishing oTk-1
+  Eigen::Quaterniond q_current_ok(prev_kf_.rotation());
+  Eigen::Vector3d t_current_ok = prev_kf_.translation();
 
   geometry_msgs::PoseStamped o2k_pose;
   o2k_pose.header.frame_id = fixed_frame_;
@@ -287,13 +295,21 @@ void KeyframeMaker::publish(const std_msgs::Header& header, const Eigen::Isometr
   o2k_pose.pose.position.z = t_current_ok.z();
   o2k_pub_.publish(o2k_pose);
 
-  // Publishing kTb
-  Eigen::Isometry3d kf_2_b = curr_kf_.inverse() * pose;
+  // Publishing k-1Tb
+  Eigen::Isometry3d kf_2_b = prev_kf_.inverse() * pose;
   Eigen::Quaterniond q_current_kb(kf_2_b.rotation());
   Eigen::Vector3d t_current_kb = kf_2_b.translation();
 
-  geometry_msgs::PoseStamped kf2b_pose;  
-  kf2b_pose.header.frame_id = "keyframe";
+  geometry_msgs::PoseStamped kf2b_pose; 
+  // Set frame id according to the curr_kf_id_ using 5 digits
+  std::stringstream ss;
+  if (curr_kf_id_ > 0) {
+    ss << "kf_" << std::setfill('0') << std::setw(7) << (curr_kf_id_ - 1);
+  } else {
+    ss << "kf_" << std::setfill('0') << std::setw(7) << 0;
+  }
+  kf2b_pose.header.frame_id = ss.str();
+  // kf2b_pose.header.frame_id = "prev_keyframe";
   kf2b_pose.header.stamp = header.stamp;  
   kf2b_pose.pose.orientation.x = q_current_kb.x();
   kf2b_pose.pose.orientation.y = q_current_kb.y();

@@ -86,7 +86,8 @@ class KeyframeMaker {
   bool publish_tf_;
   double kf_dist_;
   double kf_rot_;
-  int kf_frames_;  
+  int kf_frames_;
+  unsigned curr_kf_id_;  
 
   void readParams();
   bool getBaseToLidarTf(const std::string& frame_id);

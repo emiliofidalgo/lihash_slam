@@ -44,7 +44,6 @@
 #include <lihash_slam/LoopClosure.h>
 
 // Message queues
-std::deque<lihash_slam::Keyframe*> queue_kfs;
 std::deque<lihash_slam::LoopClosure> queue_lcs;
 
 // Map structure
@@ -67,6 +66,7 @@ ros::Publisher map_kfs_pub;
 ros::Publisher map_cells_pub;
 ros::Publisher map_traj_pub;
 ros::Publisher map_traj_path_pub;
+ros::Publisher pose_pub;
 
 // Transforms
 Eigen::Isometry3d mTo;    // Correction computed by SLAM
@@ -390,20 +390,6 @@ void writeResults(const std::string& results_dir) {
   pcl::io::savePLYFile(edge_map_filename_ply, *m, true);
 }
 
-int processKeyframes() {
-
-  // Processing new Keyframes
-  int kf_processed = 0;
-  for (size_t i = 0; i < queue_kfs.size(); i++) {    
-    lihash_slam::Keyframe* kf = queue_kfs[i];
-    map->addKeyframe(kf);
-  }
-
-  queue_kfs.erase(queue_kfs.begin(), queue_kfs.end());
-
-  return kf_processed;
-}
-
 int processLoopClosures() {
 
   // Processing Loop Closures
@@ -481,7 +467,7 @@ void keyframeClb(const lihash_slam::KeyframeMessageConstPtr& kf_msg) {
   kf->stamp_ = kf_msg->header.stamp;
   kf->addFramePoses(kf_msg->rel_poses, kf_msg->rel_stamps);
 
-  queue_kfs.push_back(kf);
+  map->addKeyframe(kf);
 }
 
 void lcClb(const lihash_slam::LoopClosureConstPtr& lc_msg) {
@@ -489,17 +475,67 @@ void lcClb(const lihash_slam::LoopClosureConstPtr& lc_msg) {
   queue_lcs.push_back(*lc_msg);  
 }
 
-void optimize(const ros::TimerEvent& event) {
+void k2bClb(const geometry_msgs::PoseStampedConstPtr& k2b_msg) {
+
+  // Creating an isometry
+  Eigen::Isometry3d kTb = Eigen::Isometry3d::Identity();
+  Eigen::Quaterniond q_current(k2b_msg->pose.orientation.w,
+                               k2b_msg->pose.orientation.x,
+                               k2b_msg->pose.orientation.y,
+                               k2b_msg->pose.orientation.z);
+  Eigen::Vector3d t_current(k2b_msg->pose.position.x,
+                            k2b_msg->pose.position.y,
+                            k2b_msg->pose.position.z);  
+  kTb.linear() = q_current.toRotationMatrix();
+  kTb.translation() = t_current;
+
+  // Get the current keyframe from the header frame_id of the message removing the first three characters
+  int kf_id = std::stoi(k2b_msg->header.frame_id.substr(3, k2b_msg->header.frame_id.size()));  
   
-  // Inserting new received keyframes
-  processKeyframes();
+  // Checking if the keyframe exists
+  if (map->existsKeyframe(kf_id)) {     
+
+    // Getting keyframes
+    std::vector<lihash_slam::Keyframe*>* kfs = map->getKeyframes();
+
+    // Getting the keyframe
+    lihash_slam::Keyframe* kf = kfs->at(kf_id);
+    // Getting the corrected pose of the keyframe    
+    Eigen::Isometry3d mTk = kf->pose_est;
+
+    // Converting the pose regarding the map
+    Eigen::Isometry3d mTb = mTk * kTb;
+
+    // Republishing the pose 
+    Eigen::Quaterniond q_current_m2b(mTb.rotation());
+    Eigen::Vector3d t_current_m2b = mTb.translation();
+
+    // Creating the base message
+    geometry_msgs::PoseStamped msg;
+    msg.header.frame_id = map_frame;
+    msg.header.stamp = k2b_msg->header.stamp;
+
+    // Filling the pose
+    msg.pose.orientation.x = q_current_m2b.x();
+    msg.pose.orientation.y = q_current_m2b.y();
+    msg.pose.orientation.z = q_current_m2b.z();
+    msg.pose.orientation.w = q_current_m2b.w();
+    msg.pose.position.x = t_current_m2b.x();
+    msg.pose.position.y = t_current_m2b.y();
+    msg.pose.position.z = t_current_m2b.z();
+
+    pose_pub.publish(msg);
+  }
+}
+
+void optimize(const ros::TimerEvent& event) {  
 
   // Inserting new detected LCs
   int nloops = processLoopClosures();  
 
   // Optimize the graph is there any new loop closure
   if (nloops > 0) {
-    map->optimize();    
+    map->optimize();
   }
 }
 
@@ -621,12 +657,16 @@ int main(int argc, char** argv) {
   // LCs
   ros::Subscriber lc_sub = nh.subscribe("lc", 100, lcClb);
 
+  // K2B pose
+  ros::Subscriber k2b_sub = nh.subscribe("k2b", 100, k2bClb);
+
   // Publishers
   map_points_pub    = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);
   map_kfs_pub       = nh.advertise<visualization_msgs::MarkerArray>("map/keyframes", 120, true);
   map_cells_pub     = nh.advertise<visualization_msgs::Marker>("map/cells", 120, true);
   map_traj_pub      = nh.advertise<visualization_msgs::Marker>("map/trajectory", 120, true);
   map_traj_path_pub = nh.advertise<nav_msgs::Path>("map/trajectory_path", 120, true);
+  pose_pub          = nh.advertise<geometry_msgs::PoseStamped>("pose", 120, true);
 
   // Timers  
   ros::Timer pub_timer = nh.createTimer(ros::Duration(map_period), publishMap);
