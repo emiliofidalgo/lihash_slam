@@ -655,10 +655,10 @@ int main(int argc, char** argv) {
   ros::Subscriber kf_subs = nh.subscribe("kfs", 1000, keyframeClb);
   
   // LCs
-  ros::Subscriber lc_sub = nh.subscribe("lc", 100, lcClb);
+  ros::Subscriber lc_sub = nh.subscribe("lc", 1000, lcClb);
 
   // K2B pose
-  ros::Subscriber k2b_sub = nh.subscribe("k2b", 100, k2bClb);
+  ros::Subscriber k2b_sub = nh.subscribe("k2b", 1000, k2bClb);
 
   // Publishers
   map_points_pub    = nh.advertise<sensor_msgs::PointCloud2>("map/points", 120, true);

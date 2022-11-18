@@ -62,9 +62,9 @@ int main(int argc, char** argv) {
   kfmaker = new lihash_slam::KeyframeMaker(nh);
 
   // ROS Interface
-  message_filters::Subscriber<sensor_msgs::PointCloud2> points_sub(nh, "points", 50);
-  message_filters::Subscriber<nav_msgs::Odometry> pose_sub(nh, "pose", 50);
-  message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, nav_msgs::Odometry> sync(points_sub, pose_sub, 10);
+  message_filters::Subscriber<sensor_msgs::PointCloud2> points_sub(nh, "points", 300);
+  message_filters::Subscriber<nav_msgs::Odometry> pose_sub(nh, "pose", 300);
+  message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, nav_msgs::Odometry> sync(points_sub, pose_sub, 300);
   sync.registerCallback(boost::bind(&syncClb, _1, _2));
 
   // Receiving messages
