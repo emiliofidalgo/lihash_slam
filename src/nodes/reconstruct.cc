@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
       lihash_slam::PointCloud::Ptr filtered(new lihash_slam::PointCloud);
       for (size_t i = 0; i < cloud->points.size(); i++) {
         double dist = std::sqrt(cloud->points[i].x * cloud->points[i].x + cloud->points[i].y * cloud->points[i].y + cloud->points[i].z * cloud->points[i].z);
-        if (dist > 0.7) {
+        if (dist > 0.7 && dist < 50) {
           filtered->points.push_back(cloud->points[i]);
         }
       }

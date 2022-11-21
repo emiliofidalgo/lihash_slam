@@ -5,6 +5,7 @@
 # Variables
 POSE_DIR=$1
 BAG_DIR=$2
+VOXEL_SIZE=$3
 PCD_DIR="$POSE_DIR/pcds/"
 
 # Starting reconstruction
@@ -22,4 +23,4 @@ fi
 
 # Calling the reconstruction script
 echo "Performing the reconstruction ..."
-roslaunch lihash_slam lihash_slam_reconstruct.launch input_dir:=$POSE_DIR
+roslaunch lihash_slam lihash_slam_reconstruct.launch input_dir:=$POSE_DIR voxel_grid_size:=$VOXEL_SIZE
